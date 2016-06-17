@@ -5,7 +5,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-public class ImageClipper implements ActionListener, MouseListener {
+public class ImageClipper implements ActionListener, MouseMotionListener {
 
 	private JFrame mainWindow;
 	private JPanel selectTabPanel;
@@ -46,8 +46,9 @@ public class ImageClipper implements ActionListener, MouseListener {
 	private BufferedImage copyFromImage;
 	private int copyFromHeight;
 	private int copyFromWidth;
-	private final int fullyTransparentColor = new Color(0,0,0,0).getRGB();
-	private JCheckBox highlightMode;
+	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
+	private JCheckBox highlight;
+	private JCheckBox unHighlight;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -89,11 +90,20 @@ public class ImageClipper implements ActionListener, MouseListener {
 
 		loadImage = makeButton("load image");
 		loadImage.setBounds(225, 10, 120, 30);
-		
-		highlightMode = new JCheckBox("highlighting on");
-		highlightMode.setBounds(355, 10, 110, 30);
-		highlightMode.setBackground(Color.black);
-		highlightMode.setForeground(Color.white);
+
+		highlight = new JCheckBox("highlight");
+		highlight.setBounds(355, 10, 80, 30);
+		highlight.setBackground(Color.black);
+		highlight.setForeground(Color.white);
+		highlight.addActionListener(this);
+		highlight.setVisible(false);
+
+		unHighlight = new JCheckBox("unHighlight");
+		unHighlight.setBounds(435, 10, 110, 30);
+		unHighlight.setBackground(Color.black);
+		unHighlight.setForeground(Color.white);
+		unHighlight.addActionListener(this);
+		unHighlight.setVisible(false);
 
 		imageToHighlightLayeredPane = new JLayeredPane();
 
@@ -105,7 +115,8 @@ public class ImageClipper implements ActionListener, MouseListener {
 		imageToHighlightScrollPane.setBounds(5, 45, 1185, 520);
 		imageToHighlightScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
 		imageToHighlightScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		imageToHighlightScrollPane.addMouseListener(this);
+
+		imageToHighlightLayeredPane.addMouseMotionListener(this);
 		// imageToHighlightScrollPane.setVisible(false);
 
 		imageToPasteToLayeredPane = new JLayeredPane();
@@ -124,7 +135,8 @@ public class ImageClipper implements ActionListener, MouseListener {
 		mainWindow.getContentPane().add(imageToHighlightScrollPane);
 		mainWindow.getContentPane().add(imageToPasteToScrollPane);
 		mainWindow.getContentPane().add(loadImage);
-		mainWindow.getContentPane().add(highlightMode);
+		mainWindow.getContentPane().add(highlight);
+		mainWindow.getContentPane().add(unHighlight);
 
 	}
 
@@ -139,6 +151,20 @@ public class ImageClipper implements ActionListener, MouseListener {
 	public void actionPerformed(ActionEvent event) {
 		String action = event.getActionCommand();
 		switch (action) {
+		case "highlight":
+			if (highlight.isSelected()) {
+				unHighlight.setSelected(false);
+				highlight.setSelected(true);
+			}
+			System.out.println("test");
+			break;
+		case "unHighlight":
+			if (unHighlight.isSelected()) {
+				highlight.setSelected(false);
+				unHighlight.setSelected(true);
+			}
+			System.out.println("test");
+			break;
 		case "copy from":
 			imageToHighlightScrollPane.setVisible(true);
 			imageToPasteToScrollPane.setVisible(false);
@@ -147,6 +173,10 @@ public class ImageClipper implements ActionListener, MouseListener {
 			copyTo.setBorder(null);
 			copyFromSelected = true;
 			copyToSelected = false;
+			if (imageToHighlightTopLabel != null && imageToHighlightTopLabel.getHeight() > 0) {
+				highlight.setVisible(true);
+				unHighlight.setVisible(true);
+			}
 			break;
 		case "copy to":
 			imageToHighlightScrollPane.setVisible(false);
@@ -156,6 +186,8 @@ public class ImageClipper implements ActionListener, MouseListener {
 			copyFrom.setBorder(null);
 			copyFromSelected = false;
 			copyToSelected = true;
+			highlight.setVisible(false);
+			unHighlight.setVisible(false);
 			break;
 		case "load image":
 			if (copyFromSelected || copyToSelected) {
@@ -180,24 +212,26 @@ public class ImageClipper implements ActionListener, MouseListener {
 						setCopyFromHeight(height);
 						setCopyFromWidth(width);
 						imageToHighlightLabel.setSize(new Dimension(height, width));
-						
+
 						topCopyFromLabelBackground = new BufferedImage(height, width, BufferedImage.TYPE_INT_ARGB);
-						for(int x = 0; x < width; x++) {
+						for (int x = 0; x < width; x++) {
 							for (int y = 0; y < height; y++) {
 								topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
 							}
 						}
-												
+
 						imageToHighlightTopLabel = new JLabel(new ImageIcon(topCopyFromLabelBackground));
 						imageToHighlightTopLabel.setSize(new Dimension(height, width));
-						//imageToHighlightTopLabel.setOpaque(true);
-						
+						// imageToHighlightTopLabel.setOpaque(true);
+
 						imageToHighlightLayeredPane.add(imageToHighlightLabel);
 						imageToHighlightLayeredPane.add(imageToHighlightTopLabel);
 						imageToHighlightLayeredPane.moveToFront(imageToHighlightTopLabel);
 						imageToHighlightLayeredPane.repaint();
 						imageToHighlightLayeredPane.setVisible(false);
 						imageToHighlightLayeredPane.setVisible(true);
+						highlight.setVisible(true);
+						unHighlight.setVisible(true);
 
 					}
 
@@ -206,42 +240,6 @@ public class ImageClipper implements ActionListener, MouseListener {
 			}
 			break;
 		}
-
-	}
-
-	@Override
-	public void mouseClicked(MouseEvent arg0) {
-		int x = arg0.getX();
-		int y = arg0.getY();
-		if (x <= getCopyFromWidth() && y <= getCopyFromHeight() && highlightMode.isSelected()) {
-			System.out.println("x: " + x);
-			System.out.println("y: " + y);
-			System.out.println(new Color(copyFromImage.getRGB(x, y)));
-		}
-
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mousePressed(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -259,5 +257,18 @@ public class ImageClipper implements ActionListener, MouseListener {
 
 	public void setCopyFromWidth(int copyFromWidth) {
 		this.copyFromWidth = copyFromWidth;
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent arg0) {
+
+		System.out.println("x: " + arg0.getX());
+		System.out.println("y: " + arg0.getY());
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+
 	}
 }
