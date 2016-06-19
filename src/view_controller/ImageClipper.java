@@ -1,8 +1,8 @@
+package view_controller;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -10,7 +10,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -26,6 +26,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import model.Point;
 
 public class ImageClipper implements ActionListener, MouseMotionListener {
 
@@ -55,9 +57,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private JCheckBox unHighlight;
 	private JButton copyToClipboard;
 	private JComboBox<String> highlightSizePick;
-	private ArrayList<Point> highlightedPixels = new ArrayList<Point>();
-
-	public static void main(String[] args) {
+    private HashSet<Point> highlightedPixels = new HashSet<Point>();
+    
+    public static void main(String[] args) {
 		// standard thread invocation in swing apps
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -209,6 +211,18 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 			unHighlight.setVisible(false);
 			highlightSizePick.setVisible(false);
 			break;
+		case "copy to clipboard":
+			/*
+			ArrayList<Point> tempHighlightArray = new ArrayList<Point>();
+			for (int i = 0; i < highlightedPixels.size(); i++) {
+				if(!tempHighlightArray.contains(highlightedPixels.get(i))) {
+					tempHighlightArray.add(highlightedPixels.get(i));
+				}
+			}
+			System.out.println(highlightedPixels.size());
+			System.out.println(tempHighlightArray.size());
+			*/
+			break;
 		case "load image":
 			if (copyFromSelected || copyToSelected) {
 				JFileChooser chooser = new JFileChooser(userDir);
@@ -282,20 +296,30 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	public void mouseDragged(MouseEvent arg0) {
 		if (arg0.getX() >= 0 && arg0.getX() <= getCopyFromWidth() && arg0.getY() >= 0
 				&& arg0.getY() <= getCopyFromHeight() && copyFromSelected) {
-			if (highlight.isSelected()) {
+			if (highlight.isSelected() || unHighlight.isSelected()) {
 
 				switch (String.valueOf(highlightSizePick.getSelectedItem())) {
 				case "small":
-					highlightedPixels.add(new Point(arg0.getX(), arg0.getY()));
-					topCopyFromLabelBackground.setRGB(arg0.getX(), arg0.getY(), highlightColor);
+					if (highlight.isSelected()) {
+						highlightedPixels.add(new Point(arg0.getX(), arg0.getY()));
+						topCopyFromLabelBackground.setRGB(arg0.getX(), arg0.getY(), highlightColor);
+					} else if (unHighlight.isSelected()) {
+						highlightedPixels.remove(new Point(arg0.getX(), arg0.getY()));
+						topCopyFromLabelBackground.setRGB(arg0.getX(), arg0.getY(), fullyTransparentColor);
+					}
 					break;
 				case "medium":
 					if (arg0.getX() >= 2 & (arg0.getX() + 2) <= getCopyFromWidth() & arg0.getY() >= 2
 							&& (arg0.getY() + 2) <= getCopyFromHeight()) {
 						for (int x = arg0.getX() - 2; x < arg0.getX() + 2; x++) {
 							for (int y = arg0.getY() - 2; y < arg0.getY() + 2; y++) {
-								highlightedPixels.add(new Point(x, y));
-								topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								if (highlight.isSelected()) {
+									highlightedPixels.add(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								} else if (unHighlight.isSelected()) {
+									highlightedPixels.remove(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+								}
 							}
 						}
 					}
@@ -305,8 +329,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 							&& (arg0.getY() + 4) <= getCopyFromHeight()) {
 						for (int x = arg0.getX() - 3; x < arg0.getX() + 4; x++) {
 							for (int y = arg0.getY() - 3; y < arg0.getY() + 4; y++) {
-								highlightedPixels.add(new Point(x, y));
-								topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								if (highlight.isSelected()) {
+									highlightedPixels.add(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								} else if (unHighlight.isSelected()) {
+									highlightedPixels.remove(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+								}
 							}
 						}
 					}
@@ -316,8 +345,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 							&& (arg0.getY() + 6) <= getCopyFromHeight()) {
 						for (int x = arg0.getX() - 6; x < arg0.getX() + 7; x++) {
 							for (int y = arg0.getY() - 6; y < arg0.getY() + 7; y++) {
-								highlightedPixels.add(new Point(x, y));
-								topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								if (highlight.isSelected()) {
+									highlightedPixels.add(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								} else if (unHighlight.isSelected()) {
+									highlightedPixels.remove(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+								}
 							}
 						}
 					}
@@ -327,19 +361,23 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 							&& (arg0.getY() + 20) <= getCopyFromHeight()) {
 						for (int x = arg0.getX() - 20; x < arg0.getX() + 21; x++) {
 							for (int y = arg0.getY() - 20; y < arg0.getY() + 21; y++) {
-								highlightedPixels.add(new Point(x, y));
-								topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								if (highlight.isSelected()) {
+									highlightedPixels.add(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+								} else if (unHighlight.isSelected()) {
+									highlightedPixels.remove(new Point(x, y));
+									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+								}
 							}
 						}
 					}
 					break;
 				}
+				//System.out.println("size " + highlightedPixels.size());
 				imageToHighlightTopLabel.setVisible(false);
 				imageToHighlightTopLabel.setVisible(true);
 			}
 		}
-		System.out.println("x: " + arg0.getX());
-		System.out.println("y: " + arg0.getY());
 	}
 
 	@Override
