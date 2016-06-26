@@ -10,6 +10,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import javax.imageio.ImageIO;
@@ -58,6 +59,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private JButton copyToClipboard;
 	private JComboBox<String> highlightSizePick;
     private HashSet<Point> highlightedPixels = new HashSet<Point>();
+	private BufferedImage copyToImage;
+	private JLabel imageToPasteLabel;
+	private BufferedImage topPasteToLabelBackground;
+	private JLabel imageToPasteTopLabel;
+	private ArrayList<BufferedImage> clippings = new ArrayList<BufferedImage>();
     
     public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -126,6 +132,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 
 		copyToClipboard = makeButton("copy to clipboard");
 		copyToClipboard.setBounds(655, 10, 140, 30);
+		copyToClipboard.setVisible(false);
 
 		imageToHighlightLayeredPane = new JLayeredPane();
 
@@ -142,10 +149,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		// imageToHighlightScrollPane.setVisible(false);
 
 		imageToPasteToLayeredPane = new JLayeredPane();
-
-		// imageToPasteToLayeredPane.setBorder(BorderFactory.createLineBorder(Color.red));
-		// imageToPasteToLayeredPane.setPreferredSize(new Dimension(1800,
-		// 1600));
+		imageToPasteToLayeredPane.addMouseMotionListener(this);
+		
 
 		imageToPasteToScrollPane = new JScrollPane(imageToPasteToLayeredPane);
 		imageToPasteToScrollPane.setBounds(5, 45, 1185, 520);
@@ -198,6 +203,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 				highlightSizePick.setVisible(true);
 				highlight.setVisible(true);
 				unHighlight.setVisible(true);
+				copyToClipboard.setVisible(true);
 			}
 			break;
 		case "copy to":
@@ -210,18 +216,45 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 			highlight.setVisible(false);
 			unHighlight.setVisible(false);
 			highlightSizePick.setVisible(false);
+			copyToClipboard.setVisible(false);
 			break;
 		case "copy to clipboard":
-			/*
-			ArrayList<Point> tempHighlightArray = new ArrayList<Point>();
-			for (int i = 0; i < highlightedPixels.size(); i++) {
-				if(!tempHighlightArray.contains(highlightedPixels.get(i))) {
-					tempHighlightArray.add(highlightedPixels.get(i));
+			if(highlightedPixels.size() > 100) {
+				ArrayList<Point> pixels = new ArrayList<Point>(highlightedPixels);
+				int maxX = 0;
+				int maxY = 0;
+				int minX = getCopyFromWidth();
+				int minY = getCopyFromHeight();
+				for(int i = 0; i < pixels.size(); i++) {
+					if(pixels.get(i).getX() > maxX) {
+						maxX = pixels.get(i).getX(); 
+					}
+					if(pixels.get(i).getX() < minX) {
+						minX = pixels.get(i).getX(); 
+					}
+					if(pixels.get(i).getY() > maxY) {
+						maxY = pixels.get(i).getY(); 
+					}
+					if(pixels.get(i).getY() < minY) {
+						minY = pixels.get(i).getY(); 
+					}
 				}
+				/*
+				System.out.println("max x: " + maxX);
+				System.out.println("max y: " + maxY);
+				System.out.println("min x: " + minX);
+				System.out.println("min y: " + minY);
+				*/
+				BufferedImage clipping = new BufferedImage((maxX - minY + 1), (maxY - minY + 1), BufferedImage.TYPE_INT_ARGB);
+				for(int x = minX; x < maxX; x++) {
+					for(int y = minY; y < maxY; y++) {
+						clipping.setRGB(x, y, copyFromImage.getRGB(x, y));
+					}
+				}
+				clippings.add(clipping);
+				makeCopyFromTopTransparent();
+				highlightedPixels = new HashSet<Point>();
 			}
-			System.out.println(highlightedPixels.size());
-			System.out.println(tempHighlightArray.size());
-			*/
 			break;
 		case "load image":
 			if (copyFromSelected || copyToSelected) {
@@ -230,7 +263,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 				int returnVal = chooser.showOpenDialog(mainWindow);
 
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					if (copyFromSelected == true) {
+					if (copyFromSelected) {
 						File file = new File(chooser.getSelectedFile().getAbsolutePath());
 						copyFromImage = null;
 						try {
@@ -248,11 +281,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 						imageToHighlightLabel.setSize(new Dimension(height, width));
 
 						topCopyFromLabelBackground = new BufferedImage(height, width, BufferedImage.TYPE_INT_ARGB);
-						for (int x = 0; x < width; x++) {
-							for (int y = 0; y < height; y++) {
-								topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
-							}
-						}
+						
+						makeCopyFromTopTransparent();
 
 						imageToHighlightTopLabel = new JLabel(new ImageIcon(topCopyFromLabelBackground));
 						imageToHighlightTopLabel.setSize(new Dimension(height, width));
@@ -266,6 +296,40 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 						highlight.setVisible(true);
 						unHighlight.setVisible(true);
 						highlightSizePick.setVisible(true);
+						copyToClipboard.setVisible(true);
+					} else if (copyToSelected) {
+						File file = new File(chooser.getSelectedFile().getAbsolutePath());
+						copyToImage = null;
+						try {
+							copyToImage = ImageIO.read(file);
+						} catch (IOException e) {
+
+						}
+						int height = copyToImage.getHeight();
+						int width = copyToImage.getHeight();
+						imageToPasteToLayeredPane.removeAll();
+						imageToPasteLabel = new JLabel(new ImageIcon(chooser.getSelectedFile().getAbsolutePath()));
+						imageToPasteToLayeredPane.setPreferredSize(new Dimension(height, width));
+						setCopyFromHeight(height);
+						setCopyFromWidth(width);
+						imageToPasteLabel.setSize(new Dimension(height, width));
+
+						topPasteToLabelBackground = new BufferedImage(height, width, BufferedImage.TYPE_INT_ARGB);
+						for (int x = 0; x < width; x++) {
+							for (int y = 0; y < height; y++) {
+								topPasteToLabelBackground.setRGB(x, y, fullyTransparentColor);
+							}
+						}
+
+						imageToPasteTopLabel = new JLabel(new ImageIcon(topPasteToLabelBackground));
+						imageToPasteTopLabel.setSize(new Dimension(height, width));
+
+						imageToPasteToLayeredPane.add(imageToPasteLabel);
+						imageToPasteToLayeredPane.add(imageToPasteTopLabel);
+						imageToPasteToLayeredPane.moveToFront(imageToPasteTopLabel);
+						imageToPasteToLayeredPane.repaint();
+						imageToPasteToLayeredPane.setVisible(false);
+						imageToPasteToLayeredPane.setVisible(true);
 					}
 
 				}
@@ -274,6 +338,14 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 			break;
 		}
 
+	}
+
+	private void makeCopyFromTopTransparent() {
+		for (int x = 0; x < getCopyFromWidth(); x++) {
+			for (int y = 0; y < getCopyFromHeight(); y++) {
+				topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+			}
+		}
 	}
 
 	public int getCopyFromHeight() {
@@ -359,8 +431,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 				case "xxxl":
 					if (arg0.getX() >= 20 & (arg0.getX() + 20) <= getCopyFromWidth() & arg0.getY() >= 20
 							&& (arg0.getY() + 20) <= getCopyFromHeight()) {
-						for (int x = arg0.getX() - 20; x < arg0.getX() + 21; x++) {
-							for (int y = arg0.getY() - 20; y < arg0.getY() + 21; y++) {
+						for (int x = arg0.getX() - 20; x < arg0.getX() + 20; x++) {
+							for (int y = arg0.getY() - 20; y < arg0.getY() + 20; y++) {
 								if (highlight.isSelected()) {
 									highlightedPixels.add(new Point(x, y));
 									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
@@ -373,7 +445,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 					}
 					break;
 				}
-				//System.out.println("size " + highlightedPixels.size());
 				imageToHighlightTopLabel.setVisible(false);
 				imageToHighlightTopLabel.setVisible(true);
 			}
