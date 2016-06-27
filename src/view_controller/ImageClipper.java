@@ -55,6 +55,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private BufferedImage copyFromImage;
 	private int copyFromHeight;
 	private int copyFromWidth;
+	private int copyToHeight;
+	private int copyToWidth;
 	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
 	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
 	private JCheckBox highlight;
@@ -72,6 +74,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private JButton pasteClipping;
 	private boolean newClippingAdded;
 	private ArrayList<BufferedImage> addClippingButtonIcons;
+	private int currentClippingIconIndex;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -234,6 +237,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 			highlightSizePick.setVisible(false);
 			copyToClipboard.setVisible(false);
 			if (clippings.size() > 0) {
+				setCurrentClippingIconIndex(0);
 				showClippingChoice(true);
 				if (isNewClippingAdded()) {
 					setNewClippingAdded(false);
@@ -243,9 +247,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 					double height = 0;
 					for (int i = 0; i < clippings.size(); i++) {
 						if (clippings.get(i).getHeight() > clippings.get(i).getWidth()) {
-							ratio = clippings.get(i).getHeight() * 1.0 / 106.0;
+							ratio = clippings.get(i).getHeight() * 1.0 / 108.0;
 						} else {
-							ratio = clippings.get(i).getWidth() * 1.0 / 106.0;
+							ratio = clippings.get(i).getWidth() * 1.0 / 108.0;
 						}
 						width = clippings.get(i).getWidth() / ratio;
 						height = clippings.get(i).getHeight() / ratio;
@@ -353,12 +357,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 
 						}
 						int height = copyToImage.getHeight();
-						int width = copyToImage.getHeight();
+						int width = copyToImage.getWidth();
 						imageToPasteToLayeredPane.removeAll();
 						imageToPasteLabel = new JLabel(new ImageIcon(chooser.getSelectedFile().getAbsolutePath()));
-						imageToPasteToLayeredPane.setPreferredSize(new Dimension(height, width));
-						setCopyFromHeight(height);
-						setCopyFromWidth(width);
+						imageToPasteToLayeredPane.setPreferredSize(new Dimension(width, height));
+						setCopyToHeight(height);
+						setCopyToWidth(width);
 						imageToPasteLabel.setSize(new Dimension(width, height));
 
 						topPasteToLabelBackground = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -381,6 +385,22 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 
 			}
 			break;
+		case ">":
+			setCurrentClippingIconIndex(getCurrentClippingIconIndex() + 1);
+			lowerIndexClipping.setEnabled(true);
+			if((getCurrentClippingIconIndex() + 1) == clippings.size()) {
+				higherIndexClipping.setEnabled(false);
+			}
+			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
+			break;
+		case "<":
+			setCurrentClippingIconIndex(getCurrentClippingIconIndex() - 1);
+			higherIndexClipping.setEnabled(true);
+			if(getCurrentClippingIconIndex() == 0) {
+				lowerIndexClipping.setEnabled(false);
+			}
+			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
+			break;
 		}
 
 	}
@@ -389,6 +409,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		lowerIndexClipping.setVisible(arg);
 		higherIndexClipping.setVisible(arg);
 		pasteClipping.setVisible(arg);
+		if(clippings.size() > 1) {
+			higherIndexClipping.setEnabled(true);
+		} else {
+			higherIndexClipping.setEnabled(false);
+		}
+		lowerIndexClipping.setEnabled(false);
 
 	}
 
@@ -426,6 +452,34 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 
 	public void setCopyFromWidth(int copyFromWidth) {
 		this.copyFromWidth = copyFromWidth;
+	}
+
+	/**
+	 * @return the copyToHeight
+	 */
+	public int getCopyToHeight() {
+		return copyToHeight;
+	}
+
+	/**
+	 * @param copyToHeight the copyToHeight to set
+	 */
+	public void setCopyToHeight(int copyToHeight) {
+		this.copyToHeight = copyToHeight;
+	}
+
+	/**
+	 * @return the copyToWidth
+	 */
+	public int getCopyToWidth() {
+		return copyToWidth;
+	}
+
+	/**
+	 * @param copyToWidth the copyToWidth to set
+	 */
+	public void setCopyToWidth(int copyToWidth) {
+		this.copyToWidth = copyToWidth;
 	}
 
 	@Override
@@ -534,5 +588,19 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	 */
 	public void setNewClippingAdded(boolean newClippingAdded) {
 		this.newClippingAdded = newClippingAdded;
+	}
+
+	/**
+	 * @return the currentClippingIconIndex
+	 */
+	public int getCurrentClippingIconIndex() {
+		return currentClippingIconIndex;
+	}
+
+	/**
+	 * @param currentClippingIconIndex the currentClippingIconIndex to set
+	 */
+	public void setCurrentClippingIconIndex(int currentClippingIconIndex) {
+		this.currentClippingIconIndex = currentClippingIconIndex;
 	}
 }
