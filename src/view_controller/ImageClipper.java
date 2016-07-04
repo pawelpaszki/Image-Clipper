@@ -8,6 +8,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -33,7 +34,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import model.Point;
 import model.Scalr;
 
-public class ImageClipper implements ActionListener, MouseMotionListener {
+public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener {
 
 	private JFrame mainWindow;
 	private JPanel selectTabPanel;
@@ -59,6 +60,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private int copyToWidth;
 	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
 	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
+	// private final int semiTransparentColor = new Color(255, 255, 255,
+	// 192).getRGB();
 	private JCheckBox highlight;
 	private JCheckBox unHighlight;
 	private JButton copyToClipboard;
@@ -75,6 +78,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	private boolean newClippingAdded;
 	private ArrayList<BufferedImage> addClippingButtonIcons;
 	private int currentClippingIconIndex;
+	private int startX;
+	private int endX;
+	private int startY;
+	private int endY;
+	private int pressedX;
+	private int pressedY;
+	private BufferedImage pastedClipping;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -97,7 +107,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		mainWindow.setSize(1200, 700);
 		mainWindow.setResizable(false);
 		mainWindow.setLocationRelativeTo(null);
-		mainWindow.setVisible(true); 
+		mainWindow.setVisible(true);
 		mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainWindow.getContentPane().setBackground(Color.black);
 		mainWindow.setLayout(null);
@@ -152,6 +162,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		imageToHighlightLayeredPane.addMouseMotionListener(this);
 		imageToPasteToLayeredPane = new JLayeredPane();
 		imageToPasteToLayeredPane.addMouseMotionListener(this);
+		imageToPasteToLayeredPane.addMouseListener(this);
 
 		imageToPasteToScrollPane = new JScrollPane(imageToPasteToLayeredPane);
 		imageToPasteToScrollPane.setBounds(5, 125, 1185, 540);
@@ -366,11 +377,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 						imageToPasteLabel.setSize(new Dimension(width, height));
 
 						topPasteToLabelBackground = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-						for (int x = 0; x < width; x++) {
-							for (int y = 0; y < height; y++) {
-								topPasteToLabelBackground.setRGB(x, y, fullyTransparentColor);
-							}
-						}
+						setCopyToTopLayerTransparent(width, height);
 
 						imageToPasteTopLabel = new JLabel(new ImageIcon(topPasteToLabelBackground));
 						imageToPasteTopLabel.setSize(new Dimension(width, height));
@@ -388,7 +395,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		case ">":
 			setCurrentClippingIconIndex(getCurrentClippingIconIndex() + 1);
 			lowerIndexClipping.setEnabled(true);
-			if((getCurrentClippingIconIndex() + 1) == clippings.size()) {
+			if ((getCurrentClippingIconIndex() + 1) == clippings.size()) {
 				higherIndexClipping.setEnabled(false);
 			}
 			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
@@ -396,11 +403,61 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		case "<":
 			setCurrentClippingIconIndex(getCurrentClippingIconIndex() - 1);
 			higherIndexClipping.setEnabled(true);
-			if(getCurrentClippingIconIndex() == 0) {
+			if (getCurrentClippingIconIndex() == 0) {
 				lowerIndexClipping.setEnabled(false);
 			}
 			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
 			break;
+		case "paste clipping":
+			if (imageToPasteLabel.getWidth() > 0) {
+				setCopyToTopLayerTransparent(imageToPasteLabel.getWidth(), imageToPasteLabel.getHeight());
+				pastedClipping = null;
+				int clippingHeight = clippings.get(currentClippingIconIndex).getHeight();
+				int clippingWidth = clippings.get(currentClippingIconIndex).getWidth();
+				if (clippingHeight > imageToPasteLabel.getHeight() || clippingWidth > imageToPasteLabel.getWidth()) {
+					double widthRatio = Math.round(clippingWidth * 100.0 / imageToPasteLabel.getWidth()) / 100.0 + 0.1;
+					double heightRatio = Math.round(clippingHeight * 100.0 / imageToPasteLabel.getHeight()) / 100.0
+							+ 0.1;
+					System.out.println("width ratio:" + widthRatio);
+					System.out.println("height ratio:" + heightRatio);
+					double resizeRatio = 0;
+					if (widthRatio > heightRatio) {
+						resizeRatio = widthRatio;
+					} else {
+						resizeRatio = heightRatio;
+					}
+					double width = clippingWidth / resizeRatio;
+					double height = clippingHeight / resizeRatio;
+					pastedClipping = Scalr.resize(clippings.get(currentClippingIconIndex), ((int) width),
+							((int) height));
+
+					System.out.println("image height: " + pastedClipping.getHeight());
+					System.out.println("image width: " + pastedClipping.getWidth());
+				} else {
+					pastedClipping = clippings.get(currentClippingIconIndex);
+				}
+				for (int x = 0; x < pastedClipping.getWidth(); x++) {
+					for (int y = 0; y < pastedClipping.getHeight(); y++) {
+						topPasteToLabelBackground.setRGB(x, y, pastedClipping.getRGB(x, y));
+					}
+				}
+				setStartX(0);
+				setStartY(0);
+				setEndX(pastedClipping.getWidth() - 1);
+				setEndY(pastedClipping.getHeight() - 1);
+				imageToPasteTopLabel.setVisible(false);
+				imageToPasteTopLabel.setVisible(true);
+			}
+			break;
+		}
+
+	}
+
+	private void setCopyToTopLayerTransparent(int width, int height) {
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				topPasteToLabelBackground.setRGB(x, y, fullyTransparentColor);
+			}
 		}
 
 	}
@@ -409,7 +466,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 		lowerIndexClipping.setVisible(arg);
 		higherIndexClipping.setVisible(arg);
 		pasteClipping.setVisible(arg);
-		if(clippings.size() > 1) {
+		if (clippings.size() > 1) {
 			higherIndexClipping.setEnabled(true);
 		} else {
 			higherIndexClipping.setEnabled(false);
@@ -462,7 +519,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	}
 
 	/**
-	 * @param copyToHeight the copyToHeight to set
+	 * @param copyToHeight
+	 *            the copyToHeight to set
 	 */
 	public void setCopyToHeight(int copyToHeight) {
 		this.copyToHeight = copyToHeight;
@@ -476,7 +534,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	}
 
 	/**
-	 * @param copyToWidth the copyToWidth to set
+	 * @param copyToWidth
+	 *            the copyToWidth to set
 	 */
 	public void setCopyToWidth(int copyToWidth) {
 		this.copyToWidth = copyToWidth;
@@ -535,6 +594,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 							&& (arg0.getY() + 6) <= getCopyFromHeight()) {
 						for (int x = arg0.getX() - 6; x < arg0.getX() + 7; x++) {
 							for (int y = arg0.getY() - 6; y < arg0.getY() + 7; y++) {
+								/*
+								 * if ((x < (arg0.getX() - 3) && y <
+								 * (arg0.getY() - 3)) || (x > (arg0.getX() + 3)
+								 * && (y > (arg0.getY() - 3)))) { continue; }
+								 * else {
+								 */
 								if (highlight.isSelected()) {
 									highlightedPixels.add(new Point(x, y));
 									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
@@ -542,6 +607,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 									highlightedPixels.remove(new Point(x, y));
 									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
 								}
+								// }
 							}
 						}
 					}
@@ -566,13 +632,52 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 				imageToHighlightTopLabel.setVisible(false);
 				imageToHighlightTopLabel.setVisible(true);
 			}
+		} else if (copyToSelected) {
+			if (getPressedX() >= getStartX() && getPressedX() < getEndX() && getPressedY() >= getStartY()
+					&& getPressedY() < getEndY()) {
+				int currentX = arg0.getX();
+				int currentY = arg0.getY();
+				if ((currentX > getPressedX()
+						&& currentX - getPressedX() + getEndX() < topPasteToLabelBackground.getWidth())
+						|| (currentX < getPressedX() && getStartX() - (getPressedX() - currentX) >= 0)
+								&& (currentY > getPressedY()
+										&& currentY - getPressedY() + getEndY() < topPasteToLabelBackground.getHeight())
+						|| (currentY < getPressedY() && getStartY() - (getPressedY() - currentY) > 0)) {
+					int x = getStartX() + currentX - getPressedX();
+					int y = getStartY() + currentY - getPressedY();
+					setCopyToTopLayerTransparent(imageToPasteLabel.getWidth(), imageToPasteLabel.getHeight());
+					System.out.println("x: " + x);
+					System.out.println("y: " + y);
+					if (x >= 0 && x + getPastedClipping().getWidth() < imageToPasteTopLabel.getWidth() && y >= 0
+							&& y + getPastedClipping().getHeight() < imageToPasteTopLabel.getHeight()) {
+						for (int xPos = x, xRGB = 0; xPos < x + getPastedClipping().getWidth(); xPos++, xRGB++) {
+							for (int yPos = y, yRGB = 0; yPos < y + getPastedClipping().getHeight(); yPos++, yRGB++) {
+								topPasteToLabelBackground.setRGB(xPos, yPos, pastedClipping.getRGB(xRGB, yRGB));
+							}
+						}
+					} else {
+						x = 0;
+						y = 0;
+						for (int xPos = x, xRGB = 0; xPos < x + getPastedClipping().getWidth(); xPos++, xRGB++) {
+							for (int yPos = y, yRGB = 0; yPos < y + getPastedClipping().getHeight(); yPos++, yRGB++) {
+								topPasteToLabelBackground.setRGB(xPos, yPos, pastedClipping.getRGB(xRGB, yRGB));
+							}
+						}
+					}
+					setStartX(x);
+					setStartY(y);
+					setEndX(x + getPastedClipping().getWidth());
+					setEndY(y + getPastedClipping().getHeight());
+					imageToPasteTopLabel.setVisible(false);
+					imageToPasteTopLabel.setVisible(true);
+				}
+			}
 		}
 	}
 
 	@Override
 	public void mouseMoved(MouseEvent arg0) {
 		// not used
-
 	}
 
 	/**
@@ -598,9 +703,146 @@ public class ImageClipper implements ActionListener, MouseMotionListener {
 	}
 
 	/**
-	 * @param currentClippingIconIndex the currentClippingIconIndex to set
+	 * @param currentClippingIconIndex
+	 *            the currentClippingIconIndex to set
 	 */
 	public void setCurrentClippingIconIndex(int currentClippingIconIndex) {
 		this.currentClippingIconIndex = currentClippingIconIndex;
+	}
+
+	/**
+	 * @return the startX
+	 */
+	public int getStartX() {
+		return startX;
+	}
+
+	/**
+	 * @param startX
+	 *            the startX to set
+	 */
+	public void setStartX(int startX) {
+		this.startX = startX;
+	}
+
+	/**
+	 * @return the endX
+	 */
+	public int getEndX() {
+		return endX;
+	}
+
+	/**
+	 * @param endX
+	 *            the endX to set
+	 */
+	public void setEndX(int endX) {
+		this.endX = endX;
+	}
+
+	/**
+	 * @return the startY
+	 */
+	public int getStartY() {
+		return startY;
+	}
+
+	/**
+	 * @param startY
+	 *            the startY to set
+	 */
+	public void setStartY(int startY) {
+		this.startY = startY;
+	}
+
+	/**
+	 * @return the endY
+	 */
+	public int getEndY() {
+		return endY;
+	}
+
+	/**
+	 * @param endY
+	 *            the endY to set
+	 */
+	public void setEndY(int endY) {
+		this.endY = endY;
+	}
+
+	/**
+	 * @return the pressedX
+	 */
+	public int getPressedX() {
+		return pressedX;
+	}
+
+	/**
+	 * @param pressedX
+	 *            the pressedX to set
+	 */
+	public void setPressedX(int pressedX) {
+		this.pressedX = pressedX;
+	}
+
+	/**
+	 * @return the pressedY
+	 */
+	public int getPressedY() {
+		return pressedY;
+	}
+
+	/**
+	 * @param pressedY
+	 *            the pressedY to set
+	 */
+	public void setPressedY(int pressedY) {
+		this.pressedY = pressedY;
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+		// not used
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent arg0) {
+		// not used
+	}
+
+	@Override
+	public void mouseExited(MouseEvent arg0) {
+		// not used
+	}
+
+	@Override
+	public void mousePressed(MouseEvent arg0) {
+		if (topPasteToLabelBackground != null) {
+			if (copyToSelected && (arg0.getX() < topPasteToLabelBackground.getWidth()
+					&& arg0.getY() < topPasteToLabelBackground.getHeight())) {
+				setPressedX(arg0.getX());
+				setPressedY(arg0.getY());
+			}
+		}
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		// not used
+	}
+
+	/**
+	 * @return the pastedClipping
+	 */
+	public BufferedImage getPastedClipping() {
+		return pastedClipping;
+	}
+
+	/**
+	 * @param pastedClipping
+	 *            the pastedClipping to set
+	 */
+	public void setPastedClipping(BufferedImage pastedClipping) {
+		this.pastedClipping = pastedClipping;
 	}
 }
