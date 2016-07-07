@@ -1,4 +1,4 @@
-# Image-Clipper
+# Image_Editor
 
 This application will be (is) created using Java Swing and will allow (allows) to: 
 - highlight a part of loaded image (any shape)
