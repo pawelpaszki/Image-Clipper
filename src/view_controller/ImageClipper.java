@@ -1,10 +1,12 @@
 package view_controller;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -85,6 +87,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private int pressedX;
 	private int pressedY;
 	private BufferedImage pastedClipping;
+	private JButton editImage;
+	private JButton moveLeftByOne;
+	private JButton moveLeftByTen;
+	private JButton moveUpByOne;
+	private Component moveUpByTen;
+	private Component moveRightByOne;
+	private JButton moveRightByTen;
+	private JButton moveDownByOne;
+	private JButton moveDownByTen;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -113,28 +124,35 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.setLayout(null);
 
 		selectTabPanel = new JPanel();
-		selectTabPanel.setBounds(5, 85, 200, 40);
+		selectTabPanel.setBounds(5, 75, 300, 40);
 		selectTabPanel.setBorder(BorderFactory.createLineBorder(Color.white));
 		selectTabPanel.setBackground(Color.black);
-		selectTabPanel.setLayout(new GridLayout(1, 2));
+		selectTabPanel.setLayout(new GridLayout(1, 3));
 
 		copyFrom = makeButton("copy from");
 		copyTo = makeButton("copy to");
+		editImage = makeButton("edit image");
 		selectTabPanel.add(copyFrom);
 		selectTabPanel.add(copyTo);
+		selectTabPanel.add(editImage);
 
 		loadImage = makeButton("load image");
-		loadImage.setBounds(225, 90, 120, 30);
+		
+		loadImage.setBounds(325, 80, 120, 30);
+		loadImage.setIcon(new ImageIcon("src/resources/load_image.png"));
+		copyFrom.setIcon(new ImageIcon("src/resources/copy_from.png"));
+		copyTo.setIcon(new ImageIcon("src/resources/copy_to.png"));
+		editImage.setIcon(new ImageIcon("src/resources/edit_image.png"));
 
 		highlight = new JCheckBox("highlight");
-		highlight.setBounds(355, 90, 80, 30);
+		highlight.setBounds(455, 80, 80, 30);
 		highlight.setBackground(Color.black);
 		highlight.setForeground(Color.white);
 		highlight.addActionListener(this);
 		highlight.setVisible(false);
 
 		unHighlight = new JCheckBox("unHighlight");
-		unHighlight.setBounds(435, 90, 100, 30);
+		unHighlight.setBounds(535, 80, 100, 30);
 		unHighlight.setBackground(Color.black);
 		unHighlight.setForeground(Color.white);
 		unHighlight.addActionListener(this);
@@ -145,12 +163,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		highlightSizePick = new JComboBox<String>(highlightSizes);
 		highlightSizePick.setSelectedItem(null);
 		highlightSizePick.addActionListener(this);
-		highlightSizePick.setBounds(545, 95, 100, 20);
+		highlightSizePick.setBounds(645, 85, 100, 20);
+		highlightSizePick.setBackground(Color.black);
+		highlightSizePick.setForeground(Color.white);
 		highlightSizePick.setVisible(false);
 
 		copyToClipboard = makeButton("copy to clipboard");
-		copyToClipboard.setBounds(655, 90, 140, 30);
+		copyToClipboard.setBounds(755, 80, 140, 30);
 		copyToClipboard.setVisible(false);
+		copyToClipboard.setIcon(new ImageIcon("src/resources/copy_to_clipboard.png"));
 
 		imageToHighlightLayeredPane = new JLayeredPane();
 
@@ -158,6 +179,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		imageToHighlightScrollPane.setBounds(5, 125, 1185, 540);
 		imageToHighlightScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
 		imageToHighlightScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		
+		imageToHighlightScrollPane.setOpaque(true);
+		imageToHighlightScrollPane.getViewport().setBackground(Color.black);
 
 		imageToHighlightLayeredPane.addMouseMotionListener(this);
 		imageToPasteToLayeredPane = new JLayeredPane();
@@ -171,30 +195,42 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		imageToPasteToScrollPane.setVisible(false);
 
 		lowerIndexClipping = makeButton("<");
-		lowerIndexClipping.setBounds(360, 50, 50, 30);
-		lowerIndexClipping.setFont(new Font("Arial", Font.BOLD, 24));
+		lowerIndexClipping.setBounds(470, 10, 20, 110);
+		lowerIndexClipping.setIcon(new ImageIcon("src/resources/lower_index.png"));
 
 		higherIndexClipping = makeButton(">");
-		higherIndexClipping.setBounds(540, 50, 50, 30);
-		higherIndexClipping.setFont(new Font("Arial", Font.BOLD, 24));
-
+		higherIndexClipping.setBounds(620, 10, 20, 110);
+		higherIndexClipping.setIcon(new ImageIcon("src/resources/higher_index.png"));
+		
 		pasteClipping = makeButton("paste clipping");
 		pasteClipping.setFont(new Font("Arial", Font.BOLD, 0));
-		pasteClipping.setBounds(420, 10, 110, 110);
+		pasteClipping.setBounds(500, 10, 110, 110);
 
+		moveLeftByOne = makeButton("left1");
+		moveLeftByOne.setBounds(680, 50, 20, 30);
+		moveLeftByTen = makeButton("left10");
+		moveLeftByTen.setBounds(650, 50, 20, 30);
+		moveUpByOne = makeButton("up1");
+		moveUpByOne.setBounds(710, 10, 30, 20);
+		moveUpByTen = makeButton("up10");
+		moveUpByTen.setBounds(710, 35, 30, 20);
+		moveRightByOne = makeButton("right1");
+		moveRightByOne.setBounds(750, 50, 20, 30);
+		moveRightByTen = makeButton("right10");
+		moveRightByTen.setBounds(780, 50, 20, 30);
+		moveDownByOne = makeButton("down1");
+		moveDownByOne.setBounds(710, 75, 30, 20);
+		moveDownByTen = makeButton("down10");
+		moveDownByTen.setBounds(710, 100, 30, 20);
+		
 		showClippingChoice(false);
 
 		mainWindow.getContentPane().add(selectTabPanel);
 		mainWindow.getContentPane().add(imageToHighlightScrollPane);
 		mainWindow.getContentPane().add(imageToPasteToScrollPane);
-		mainWindow.getContentPane().add(loadImage);
 		mainWindow.getContentPane().add(highlight);
 		mainWindow.getContentPane().add(unHighlight);
-		mainWindow.getContentPane().add(copyToClipboard);
 		mainWindow.getContentPane().add(highlightSizePick);
-		mainWindow.getContentPane().add(lowerIndexClipping);
-		mainWindow.getContentPane().add(higherIndexClipping);
-		mainWindow.getContentPane().add(pasteClipping);
 
 	}
 
@@ -202,6 +238,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		JButton button = new JButton(text);
 		button.setFocusPainted(false);
 		button.addActionListener(this);
+		button.setMargin(new Insets(0, 0, 0, 0));
+		button.setFont(new Font("Arial", Font.BOLD, 0));
+		mainWindow.getContentPane().add(button);
 		return button;
 	}
 
@@ -409,11 +448,14 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
 			break;
 		case "paste clipping":
-			if (imageToPasteLabel.getWidth() > 0) {
+			if (imageToPasteLabel != null && imageToPasteLabel.getWidth() > 0) {
+
 				setCopyToTopLayerTransparent(imageToPasteLabel.getWidth(), imageToPasteLabel.getHeight());
 				pastedClipping = null;
+
 				int clippingHeight = clippings.get(currentClippingIconIndex).getHeight();
 				int clippingWidth = clippings.get(currentClippingIconIndex).getWidth();
+
 				if (clippingHeight > imageToPasteLabel.getHeight() || clippingWidth > imageToPasteLabel.getWidth()) {
 					double widthRatio = Math.round(clippingWidth * 100.0 / imageToPasteLabel.getWidth()) / 100.0 + 0.1;
 					double heightRatio = Math.round(clippingHeight * 100.0 / imageToPasteLabel.getHeight()) / 100.0
@@ -656,8 +698,18 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 							}
 						}
 					} else {
-						x = 0;
-						y = 0;
+						if (x < 0) {
+							x = 0;
+						}
+						if (y < 0) {
+							y = 0;
+						}
+						if (x > imageToPasteTopLabel.getWidth() - getPastedClipping().getWidth()) {
+							x = imageToPasteTopLabel.getWidth() - getPastedClipping().getWidth();
+						}
+						if (y > imageToPasteTopLabel.getHeight() - getPastedClipping().getHeight()) {
+							y = imageToPasteTopLabel.getHeight() - getPastedClipping().getHeight();
+						}
 						for (int xPos = x, xRGB = 0; xPos < x + getPastedClipping().getWidth(); xPos++, xRGB++) {
 							for (int yPos = y, yRGB = 0; yPos < y + getPastedClipping().getHeight(); yPos++, yRGB++) {
 								topPasteToLabelBackground.setRGB(xPos, yPos, pastedClipping.getRGB(xRGB, yRGB));
