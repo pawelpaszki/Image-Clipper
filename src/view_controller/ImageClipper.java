@@ -94,7 +94,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JButton moveDown;
 	private JLabel movingArrows;
 	private boolean clippingPasted;
-	
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -204,26 +203,26 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		pasteClipping = makeButton("paste clipping");
 		pasteClipping.setBounds(500, 10, 110, 110);
 
-		moveLeft = makeButton("left1");
+		moveLeft = makeButton("left");
 		moveLeft.setBounds(650, 50, 30, 30);
 		moveLeft.setIcon(new ImageIcon("src/resources/left.png"));
 		moveLeft.setVisible(false);
 
-		moveUp = makeButton("up1");
+		moveUp = makeButton("up");
 		moveUp.setBounds(690, 10, 30, 30);
 		moveUp.setIcon(new ImageIcon("src/resources/up.png"));
 		moveUp.setVisible(false);
 
-		moveRight = makeButton("right1");
+		moveRight = makeButton("right");
 		moveRight.setBounds(730, 50, 30, 30);
 		moveRight.setIcon(new ImageIcon("src/resources/right.png"));
 		moveRight.setVisible(false);
-		
-		moveDown = makeButton("down1");
+
+		moveDown = makeButton("down");
 		moveDown.setBounds(690, 90, 30, 30);
 		moveDown.setIcon(new ImageIcon("src/resources/down.png"));
 		moveDown.setVisible(false);
-		
+
 		movingArrows = new JLabel(new ImageIcon("src/resources/arrows.png"));
 		movingArrows.setBounds(680, 40, 50, 50);
 		movingArrows.setVisible(false);
@@ -253,6 +252,36 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		String action = event.getActionCommand();
+		if (isClippingPasted()) {
+			switch (action) {
+			case"left":
+				if(getStartX() > 0) {
+					setStartX((getStartX() - 1));
+					setEndX((getEndX() - 1));
+				}
+				break;
+			case "right":
+				if(getEndX() < imageToPasteLabel.getWidth()) {
+					setStartX((getStartX() + 1));
+					setEndX((getEndX() + 1));
+				}
+				break;
+			case "up":
+				if(getStartY() > 0) {
+					setStartY((getStartY() - 1));
+					setEndY((getEndY() - 1));
+				}
+				break;
+			case "down":
+				if(getEndY() < imageToPasteLabel.getHeight()) {
+					setStartY((getStartY() + 1));
+					setEndY((getEndY() + 1));
+				}
+				break;
+			}
+			imageToPasteTopLabel.setBounds(getStartX(), getStartY(), imageToPasteTopLabel.getWidth(),
+					imageToPasteTopLabel.getHeight());
+		}
 		switch (action) {
 		case "highlight":
 			if (highlight.isSelected()) {
@@ -323,7 +352,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			} else {
 				showClippingChoice(false);
 			}
-			if(isClippingPasted()) {
+			if (isClippingPasted()) {
 				moveLeft.setVisible(true);
 				moveUp.setVisible(true);
 				moveRight.setVisible(true);
@@ -899,11 +928,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setClippingPasted(boolean clippingPasted) {
 		this.clippingPasted = clippingPasted;
-			moveLeft.setVisible(clippingPasted);
-			moveUp.setVisible(clippingPasted);
-			moveRight.setVisible(clippingPasted);
-			moveDown.setVisible(clippingPasted);
-			movingArrows.setVisible(clippingPasted);
+		moveLeft.setVisible(clippingPasted);
+		moveUp.setVisible(clippingPasted);
+		moveRight.setVisible(clippingPasted);
+		moveDown.setVisible(clippingPasted);
+		movingArrows.setVisible(clippingPasted);
 
 	}
 
