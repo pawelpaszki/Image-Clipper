@@ -1,6 +1,7 @@
 package view_controller;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Hashtable;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -29,13 +31,17 @@ import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSlider;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.border.LineBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import model.Point;
 import model.Scalr;
 
-public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener {
+public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener, ChangeListener {
 
 	private JFrame mainWindow;
 	private JPanel selectTabPanel;
@@ -44,6 +50,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JLabel imageToHighlightLabel;
 	private JLabel imageToHighlightTopLabel;
 	private BufferedImage topCopyFromLabelBackground;
+	private BufferedImage copyFromZoom2;
+	private BufferedImage copyFromZoom4;
 	private JLayeredPane imageToPasteToLayeredPane;
 	private JScrollPane imageToPasteToScrollPane;
 	private JButton copyTo;
@@ -59,6 +67,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private int copyFromWidth;
 	private int copyToHeight;
 	private int copyToWidth;
+	private int primaryCopyFromWidth;
+	private int primaryCopyFromHeight;
 	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
 	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
 	private JCheckBox highlight;
@@ -94,6 +104,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JButton moveDown;
 	private JLabel movingArrows;
 	private boolean clippingPasted;
+	private JSlider zoomAdjustment;
+	private JLabel sliderLabel;
+	private int zoomPicked;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -123,7 +136,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 		selectTabPanel = new JPanel();
 		selectTabPanel.setBounds(5, 75, 300, 40);
-		selectTabPanel.setBorder(BorderFactory.createLineBorder(Color.white));
+		selectTabPanel.setBorder(new LineBorder(Color.white, 1));
 		selectTabPanel.setBackground(Color.black);
 		selectTabPanel.setLayout(new GridLayout(1, 3));
 
@@ -227,6 +240,32 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		movingArrows.setBounds(680, 40, 50, 50);
 		movingArrows.setVisible(false);
 
+		final int NO_ZOOM = 1;
+		final int ZOOMx4 = 3;
+		final int ZOOMx2 = 2;
+
+		zoomAdjustment = new JSlider(JSlider.HORIZONTAL, NO_ZOOM, ZOOMx4, ZOOMx2);
+		zoomAdjustment.setBounds(455, 35, 80, 40);
+		// zoomAdjustment.setMajorTickSpacing(2);
+		zoomAdjustment.setMinorTickSpacing(1);
+		zoomAdjustment.setPaintTicks(true);
+		zoomAdjustment.setPaintLabels(true);
+		zoomAdjustment.setValue(0);
+		zoomAdjustment.addChangeListener(this);
+		Hashtable<Integer, JLabel> table = new Hashtable<Integer, JLabel>();
+		table.put(1, new JLabel("1"));
+		table.put(2, new JLabel("2"));
+		table.put(3, new JLabel("4"));
+		zoomAdjustment.setLabelTable(table);
+
+		sliderLabel = new JLabel("zoom in: ", JLabel.CENTER);
+		sliderLabel.setBounds(455, 10, 80, 20);
+		sliderLabel.setFont(new Font("Arial", Font.BOLD, 14));
+		sliderLabel.setForeground(Color.white);
+		sliderLabel.setVisible(false);
+		zoomAdjustment.setAlignmentX(Component.CENTER_ALIGNMENT);
+		zoomAdjustment.setVisible(false);
+
 		showClippingChoice(false);
 
 		mainWindow.getContentPane().add(selectTabPanel);
@@ -236,6 +275,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.getContentPane().add(unHighlight);
 		mainWindow.getContentPane().add(highlightSizePick);
 		mainWindow.getContentPane().add(movingArrows);
+		mainWindow.getContentPane().add(zoomAdjustment);
+		mainWindow.getContentPane().add(sliderLabel);
 
 	}
 
@@ -254,26 +295,26 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		String action = event.getActionCommand();
 		if (isClippingPasted()) {
 			switch (action) {
-			case"left":
-				if(getStartX() > 0) {
+			case "left":
+				if (getStartX() > 0) {
 					setStartX((getStartX() - 1));
 					setEndX((getEndX() - 1));
 				}
 				break;
 			case "right":
-				if(getEndX() < imageToPasteLabel.getWidth()) {
+				if (getEndX() < imageToPasteLabel.getWidth()) {
 					setStartX((getStartX() + 1));
 					setEndX((getEndX() + 1));
 				}
 				break;
 			case "up":
-				if(getStartY() > 0) {
+				if (getStartY() > 0) {
 					setStartY((getStartY() - 1));
 					setEndY((getEndY() - 1));
 				}
 				break;
 			case "down":
-				if(getEndY() < imageToPasteLabel.getHeight()) {
+				if (getEndY() < imageToPasteLabel.getHeight()) {
 					setStartY((getStartY() + 1));
 					setEndY((getEndY() + 1));
 				}
@@ -307,6 +348,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				highlight.setVisible(true);
 				unHighlight.setVisible(true);
 				copyToClipboard.setVisible(true);
+				zoomAdjustment.setVisible(true);
+				sliderLabel.setVisible(true);
 			}
 			showClippingChoice(false);
 			moveLeft.setVisible(false);
@@ -316,6 +359,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			movingArrows.setVisible(false);
 			break;
 		case "copy to":
+			zoomAdjustment.setVisible(false);
+			sliderLabel.setVisible(false);
 			imageToHighlightScrollPane.setVisible(false);
 			imageToPasteToScrollPane.setVisible(true);
 			copyTo.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -362,11 +407,20 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			break;
 		case "copy to clipboard":
 			if (highlightedPixels.size() > 100) {
-				ArrayList<Point> pixels = new ArrayList<Point>(highlightedPixels);
+				
 				int maxX = 0;
 				int maxY = 0;
 				int minX = getCopyFromWidth();
 				int minY = getCopyFromHeight();
+				ArrayList <Point> tempPixels = new ArrayList<Point>(); 
+				for(int x = 0; x < getPrimaryCopyFromWidth(); x++) {
+					for(int y = 0; y < getPrimaryCopyFromHeight(); y++) {
+						if(topCopyFromLabelBackground.getRGB(x, y) != fullyTransparentColor) {
+							tempPixels.add(new Point(x, y));
+						}
+					}
+				}
+				ArrayList<Point> pixels = tempPixels;
 				for (int i = 0; i < pixels.size(); i++) {
 					if (pixels.get(i).getX() > maxX) {
 						maxX = pixels.get(i).getX();
@@ -419,10 +473,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						} catch (IOException e) {
 
 						}
+						
 						int height = copyFromImage.getHeight();
 						int width = copyFromImage.getWidth();
-						System.out.println("height " + height);
-						System.out.println("width " + width);
+						setPrimaryCopyFromHeight(height);
+						setPrimaryCopyFromWidth(width);
 						imageToHighlightLayeredPane.removeAll();
 						imageToHighlightLabel = new JLabel(new ImageIcon(chooser.getSelectedFile().getAbsolutePath()));
 						imageToHighlightLayeredPane.setPreferredSize(new Dimension(width, height));
@@ -445,6 +500,22 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						unHighlight.setVisible(true);
 						highlightSizePick.setVisible(true);
 						copyToClipboard.setVisible(true);
+						zoomAdjustment.setVisible(true);
+						sliderLabel.setVisible(true);
+						copyFromZoom2 = new BufferedImage(width * 2, height * 2, BufferedImage.TYPE_INT_ARGB);
+						for (int x = 0; x < imageToHighlightTopLabel.getWidth() * 2; x++) {
+							for (int y = 0; y < imageToHighlightTopLabel.getHeight() * 2; y++) {
+								copyFromZoom2.setRGB(x, y, copyFromImage.getRGB(x / 2, y / 2));
+							}
+						}
+						copyFromZoom4 = new BufferedImage(width * 4, height * 4, BufferedImage.TYPE_INT_ARGB);
+						for (int x = 0; x < imageToHighlightTopLabel.getWidth() * 4; x++) {
+							for (int y = 0; y < imageToHighlightTopLabel.getHeight() * 4; y++) {
+								copyFromZoom4.setRGB(x, y, copyFromImage.getRGB(x / 4, y / 4));
+							}
+						}
+						setZoomPicked(1);
+						zoomAdjustment.setValue(1);
 					} else if (copyToSelected) {
 						File file = new File(chooser.getSelectedFile().getAbsolutePath());
 						copyToImage = null;
@@ -994,5 +1065,99 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setPrimaryEndY(int primaryEndY) {
 		this.primaryEndY = primaryEndY;
+	}
+
+	@Override
+	public void stateChanged(ChangeEvent arg0) {
+		JSlider source = (JSlider) arg0.getSource();
+		System.out.println(source.getValue());
+		int zoomValue = 0;
+		if (source.getValue() == 3) {
+			zoomValue = 4;
+		} else {
+			zoomValue = source.getValue();
+		}
+
+		setZoomPicked(zoomValue);
+		int height = getPrimaryCopyFromHeight() * zoomValue;
+		int width = getPrimaryCopyFromWidth() * zoomValue;
+		switch (zoomValue) {
+		case 1:
+			imageToHighlightLabel = new JLabel(new ImageIcon(copyFromImage));
+			copyToClipboard.setEnabled(true);
+			break;
+		case 2:
+			imageToHighlightLabel = new JLabel(new ImageIcon(copyFromZoom2));
+			copyToClipboard.setEnabled(false);
+			break;
+		case 4:
+			imageToHighlightLabel = new JLabel(new ImageIcon(copyFromZoom4));
+			copyToClipboard.setEnabled(false);
+			break;
+		}
+
+		imageToHighlightLayeredPane.setPreferredSize(new Dimension(width * zoomValue, height * zoomValue));
+		setCopyFromHeight(height);
+		setCopyFromWidth(width);
+		imageToHighlightLabel.setSize(new Dimension(width, height));
+		if (highlightedPixels.size() == 0) {
+			topCopyFromLabelBackground = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+			makeCopyFromTopTransparent();
+		} else {
+			BufferedImage tempTopCopyFromLabelBackground = topCopyFromLabelBackground;
+			topCopyFromLabelBackground = Scalr.resize(tempTopCopyFromLabelBackground, width, height);
+		}
+
+		imageToHighlightTopLabel = new JLabel(new ImageIcon(topCopyFromLabelBackground));
+		imageToHighlightTopLabel.setSize(new Dimension(width, height));
+		imageToHighlightLayeredPane.removeAll();
+		imageToHighlightLayeredPane.add(imageToHighlightLabel);
+		imageToHighlightLayeredPane.add(imageToHighlightTopLabel);
+		imageToHighlightLayeredPane.moveToFront(imageToHighlightTopLabel);
+		repaintCopyFrom();
+
+	}
+
+	/**
+	 * @return the zoomPicked
+	 */
+	public int getZoomPicked() {
+		return zoomPicked;
+	}
+
+	/**
+	 * @param zoomPicked
+	 *            the zoomPicked to set
+	 */
+	public void setZoomPicked(int zoomPicked) {
+		this.zoomPicked = zoomPicked;
+	}
+
+	/**
+	 * @return the primaryCopyFromWidth
+	 */
+	public int getPrimaryCopyFromWidth() {
+		return primaryCopyFromWidth;
+	}
+
+	/**
+	 * @param primaryCopyFromWidth the primaryCopyFromWidth to set
+	 */
+	public void setPrimaryCopyFromWidth(int primaryCopyFromWidth) {
+		this.primaryCopyFromWidth = primaryCopyFromWidth;
+	}
+
+	/**
+	 * @return the primaryCopyFromHeight
+	 */
+	public int getPrimaryCopyFromHeight() {
+		return primaryCopyFromHeight;
+	}
+
+	/**
+	 * @param primaryCopyFromHeight the primaryCopyFromHeight to set
+	 */
+	public void setPrimaryCopyFromHeight(int primaryCopyFromHeight) {
+		this.primaryCopyFromHeight = primaryCopyFromHeight;
 	}
 }
