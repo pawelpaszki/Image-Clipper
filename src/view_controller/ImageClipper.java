@@ -43,72 +43,72 @@ import model.Scalr;
 
 public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener, ChangeListener {
 
-	private JFrame mainWindow;
-	private JPanel selectTabPanel;
-	private JScrollPane imageToHighlightScrollPane;
-	private JLayeredPane imageToHighlightLayeredPane;
-	private JLabel imageToHighlightLabel;
-	private JLabel imageToHighlightTopLabel;
-	private BufferedImage topCopyFromLabelBackground;
-	private BufferedImage copyFromZoom2;
-	private BufferedImage copyFromZoom4;
-	private BufferedImage copyFromZoom8;
-	private JLayeredPane imageToPasteToLayeredPane;
-	private JScrollPane imageToPasteToScrollPane;
-	private JButton copyTo;
-	private JButton copyFrom;
-	private JButton loadImage;
+	private ArrayList<BufferedImage> addClippingButtonIcons;
+	private ArrayList<BufferedImage> clippings = new ArrayList<BufferedImage>();
+	private boolean clippingPasted;
 	private boolean copyFromSelected;
 	private boolean copyToSelected;
 	private boolean editImageSelected;
+	private boolean newClippingAdded;
+	private BufferedImage copyFromImage;
+	private BufferedImage copyFromZoom2;
+	private BufferedImage copyFromZoom4;
+	private BufferedImage copyFromZoom8;
+	private BufferedImage copyToImage;
+	private BufferedImage pastedClipping;
+	private BufferedImage topCopyFromLabelBackground;
 	private final String userDirLocation = System.getProperty("user.dir");
 	private final File userDir = new File(userDirLocation);
 	private final FileNameExtensionFilter filter = new FileNameExtensionFilter("images", "jpg", "gif", "png", "bmp");
-	private BufferedImage copyFromImage;
+	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
+	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
+	private HashSet<Point> highlightedPixels = new HashSet<Point>();
 	private int copyFromHeight;
 	private int copyFromWidth;
 	private int copyToHeight;
 	private int copyToWidth;
-	private int primaryCopyFromWidth;
-	private int primaryCopyFromHeight;
-	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
-	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
-	private JCheckBox highlight;
-	private JCheckBox unHighlight;
-	private JButton copyToClipboard;
-	private JComboBox<String> highlightSizePick;
-	private HashSet<Point> highlightedPixels = new HashSet<Point>();
-	private BufferedImage copyToImage;
-	private JLabel imageToPasteLabel;
-	private JLabel imageToPasteTopLabel;
-	private ArrayList<BufferedImage> clippings = new ArrayList<BufferedImage>();
-	private JButton lowerIndexClipping;
-	private JButton higherIndexClipping;
-	private JButton pasteClipping;
-	private boolean newClippingAdded;
-	private ArrayList<BufferedImage> addClippingButtonIcons;
 	private int currentClippingIconIndex;
-	private int startX;
 	private int endX;
-	private int startY;
 	private int endY;
 	private int pressedX;
 	private int pressedY;
-	private int primaryStartX;
+	private int primaryCopyFromHeight;
+	private int primaryCopyFromWidth;
 	private int primaryEndX;
-	private int primaryStartY;
 	private int primaryEndY;
-	private BufferedImage pastedClipping;
-	private JButton editImage;
-	private JButton moveLeft;
-	private JButton moveUp;
-	private JButton moveRight;
-	private JButton moveDown;
-	private JLabel movingArrows;
-	private boolean clippingPasted;
-	private JSlider zoomAdjustment;
-	private JLabel sliderLabel;
+	private int primaryStartX;
+	private int primaryStartY;
+	private int startX;
+	private int startY;
 	private int zoomPicked;
+	private JButton copyFrom;
+	private JButton copyTo;
+	private JButton copyToClipboard;
+	private JButton editImage;
+	private JButton higherIndexClipping;
+	private JButton loadImage;
+	private JButton lowerIndexClipping;
+	private JButton moveDown;
+	private JButton moveLeft;
+	private JButton moveRight;
+	private JButton moveUp;
+	private JButton pasteClipping;
+	private JCheckBox highlight;
+	private JCheckBox unHighlight;
+	private JComboBox<String> highlightSizePick;
+	private JFrame mainWindow;
+	private JLabel imageToHighlightLabel;
+	private JLabel imageToHighlightTopLabel;
+	private JLabel imageToPasteLabel;
+	private JLabel imageToPasteTopLabel;
+	private JLabel movingArrows;
+	private JLabel sliderLabel;
+	private JLayeredPane imageToHighlightLayeredPane;
+	private JLayeredPane imageToPasteToLayeredPane;
+	private JPanel selectTabPanel;
+	private JScrollPane imageToHighlightScrollPane;
+	private JScrollPane imageToPasteToScrollPane;
+	private JSlider zoomAdjustment;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -199,6 +199,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		imageToPasteToLayeredPane = new JLayeredPane();
 		imageToPasteToLayeredPane.addMouseMotionListener(this);
 		imageToPasteToLayeredPane.addMouseListener(this);
+		imageToHighlightLayeredPane.addMouseListener(this);
 
 		imageToPasteToScrollPane = new JScrollPane(imageToPasteToLayeredPane);
 		imageToPasteToScrollPane.setBounds(5, 125, 1185, 540);
@@ -470,9 +471,22 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						} catch (IOException e) {
 
 						}
+
 						mainWindow.repaint();
 						int height = copyFromImage.getHeight();
 						int width = copyFromImage.getWidth();
+
+						/*
+						 * // test// ArrayList<Color> colors = new
+						 * ArrayList<Color>(); for (int x = 0; x < width; x++) {
+						 * for (int y = 0; y < height; y++) { Color color = new
+						 * Color(copyFromImage.getRGB(x, y)); if
+						 * (!colors.contains(color)) { colors.add(color); } } }
+						 * 
+						 * System.out.println("number of colors: " +
+						 * colors.size()); // test //
+						 * 
+						 */
 						setPrimaryCopyFromHeight(height);
 						setPrimaryCopyFromWidth(width);
 						imageToHighlightLayeredPane.removeAll();
@@ -801,30 +815,43 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				case "x large":
 					if (arg0.getX() >= 6 & (arg0.getX() + 6) <= getCopyFromWidth() & arg0.getY() >= 6
 							&& (arg0.getY() + 6) <= getCopyFromHeight()) {
-						for (int x = arg0.getX() - 6; x < arg0.getX() + 7; x++) {
-							for (int y = arg0.getY() - 6; y < arg0.getY() + 7; y++) {
-								if (highlight.isSelected()) {
-									highlightedPixels.add(new Point(x, y));
-									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
-								} else if (unHighlight.isSelected()) {
-									highlightedPixels.remove(new Point(x, y));
-									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+						int xStart = arg0.getX() - 6;
+						int yStart = arg0.getY() - 6;
+						int xEnd = arg0.getX() + 7;
+						int yEnd = arg0.getY() + 7;
+						for (int x = xStart; x < xEnd; x++) {
+							for (int y = yStart; y < yEnd; y++) {
+								if (checkXandY(x - xStart, y - yStart, "x large")) {
+									if (highlight.isSelected()) {
+										highlightedPixels.add(new Point(x, y));
+										topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+									} else if (unHighlight.isSelected()) {
+										highlightedPixels.remove(new Point(x, y));
+										topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+									}
 								}
 							}
+
 						}
 					}
 					break;
 				case "xxxl":
 					if (arg0.getX() >= 20 & (arg0.getX() + 20) <= getCopyFromWidth() & arg0.getY() >= 20
 							&& (arg0.getY() + 20) <= getCopyFromHeight()) {
-						for (int x = arg0.getX() - 20; x < arg0.getX() + 20; x++) {
-							for (int y = arg0.getY() - 20; y < arg0.getY() + 20; y++) {
-								if (highlight.isSelected()) {
-									highlightedPixels.add(new Point(x, y));
-									topCopyFromLabelBackground.setRGB(x, y, highlightColor);
-								} else if (unHighlight.isSelected()) {
-									highlightedPixels.remove(new Point(x, y));
-									topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+						int xStart = arg0.getX() - 20;
+						int yStart = arg0.getY() - 20;
+						int xEnd = arg0.getX() + 20;
+						int yEnd = arg0.getY() + 20;
+						for (int x = xStart; x < xEnd; x++) {
+							for (int y = yStart; y < yEnd; y++) {
+								if (checkXandY(x - xStart, y - yStart, "xxxl")) {
+									if (highlight.isSelected()) {
+										highlightedPixels.add(new Point(x, y));
+										topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+									} else if (unHighlight.isSelected()) {
+										highlightedPixels.remove(new Point(x, y));
+										topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+									}
 								}
 							}
 						}
@@ -868,6 +895,99 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				repaintCopyTo();
 			}
 		}
+
+	}
+
+	/**
+	 * This method is used to provide specific shape of highlight or unhighlight, 
+	 * when x large or large highlight size is picked
+	 * @param x - x position value of image to be highlighted
+	 * @param y  - y position value of image to be highlighted
+	 * @param highlightSize - specifies size of highlight
+	 * @return true, if a pixel specified with x and y is to be highlighted
+	 * or unhighlighted
+	 */
+	private boolean checkXandY(int x, int y, String highlightSize) {
+		switch (highlightSize) {
+		case "x large":
+			if (x < 4 || x > 8) {
+				if (y < 4 && x + y < 5) {
+					return false;
+				} else if (y == 9 && (x < 1 || x > 12)) {
+					return false;
+				} else if (y == 10 && (x < 2 || x > 11)) {
+					return false;
+				} else if (y == 11 && (x < 3 || x > 10)) {
+					return false;
+				} else if (y == 12 && (x < 4 || x > 9)) {
+					return false;
+				} else if (x == 9 && y > 12) {
+					return false;
+				} else if (x == 10 && y > 11) {
+					return false;
+				} else if (x == 11 && y > 10) {
+					return false;
+				} else if (x == 12 && y > 9) {
+					return false;
+				}
+			}
+		case "xxxl":
+			if (x < 10 || x > 30 || y < 10 || y > 30) {
+				switch (x) {
+				case 0:
+				case 40:
+					if(y <10 || y > 30) {
+						return false;
+					}
+				case 1:
+				case 39:
+					if(y < 9 || y > 31) {
+						return false;
+					}
+				case 2:
+				case 38:
+					if(y < 8 || y > 32) {
+						return false;
+					}
+				case 3:
+				case 37:
+					if(y < 7 || y > 33) {
+						return false;
+					}
+				case 4:
+				case 36:
+					if(y < 6 || y > 34) {
+						return false;
+					}
+				case 5:
+				case 35:
+					if(y < 5 || y > 35) {
+						return false;
+					}
+				case 6:
+				case 34:
+					if(y < 4 || y > 36) {
+						return false;
+					}
+				case 7:
+				case 33:
+					if(y < 3 || y > 37) {
+						return false;
+					}
+				case 8:
+				case 32:
+					if(y < 2 || y > 38) {
+						return false;
+					}
+				case 9:
+				case 31:
+					if(y < 1 || y > 39) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -1022,6 +1142,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				setPrimaryStartY(getStartY());
 				setPrimaryEndY(getEndY());
 			}
+		} else if (copyFromImage != null && copyFromSelected && getZoomPicked() == 1
+				&& arg0.getX() < copyFromImage.getWidth() && arg0.getY() < copyFromImage.getHeight()) {
+			int x = arg0.getX();
+			int y = arg0.getY();
+			Color newColor = new Color(copyFromImage.getRGB(x, y));
+			System.out.println(newColor);
 		}
 	}
 
