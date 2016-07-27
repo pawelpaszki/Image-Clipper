@@ -32,6 +32,8 @@ import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
@@ -109,6 +111,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JScrollPane imageToHighlightScrollPane;
 	private JScrollPane imageToPasteToScrollPane;
 	private JSlider zoomAdjustment;
+	private JButton resizeClipping;
+	private JTextArea dimensions;
+	private JTextField clippingNewWidth;
+	private JTextField clippingNewHeight;
+	private JLabel newHeightLabel;
+	private JLabel newWidthLabel;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -135,6 +143,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainWindow.getContentPane().setBackground(Color.black);
 		mainWindow.setLayout(null);
+
+		dimensions = new JTextArea();
+		dimensions.setBounds(15, 15, 300, 50);
+		dimensions.setEditable(false);
+		dimensions.setBackground(Color.black);
+		dimensions.setForeground(Color.white);
+		dimensions.setFont(new Font("Arial", Font.ITALIC, 16));
 
 		selectTabPanel = new JPanel();
 		selectTabPanel.setBounds(5, 75, 300, 40);
@@ -243,6 +258,26 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		movingArrows.setBounds(680, 40, 50, 50);
 		movingArrows.setVisible(false);
 
+		resizeClipping = makeButton("resize clipping");
+		resizeClipping.setBounds(790, 80, 120, 30);
+		resizeClipping.setIcon(new ImageIcon("src/resources/resize.png"));
+		resizeClipping.setVisible(false);
+		resizeClipping.addActionListener(this);
+
+		newWidthLabel = makeLabel("w:");
+		newWidthLabel.setBounds(790, 50, 15, 20);
+		newWidthLabel.setVisible(false);
+		clippingNewWidth = new JTextField();
+		clippingNewWidth.setBounds(810, 50, 35, 20);
+		clippingNewWidth.setVisible(false);
+
+		newHeightLabel = makeLabel("h:");
+		newHeightLabel.setBounds(850, 50, 15, 20);
+		newHeightLabel.setVisible(false);
+		clippingNewHeight = new JTextField();
+		clippingNewHeight.setBounds(870, 50, 35, 20);
+		clippingNewHeight.setVisible(false);
+
 		showClippingChoice(false);
 
 		mainWindow.getContentPane().add(selectTabPanel);
@@ -252,7 +287,21 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.getContentPane().add(unHighlight);
 		mainWindow.getContentPane().add(highlightSizePick);
 		mainWindow.getContentPane().add(movingArrows);
+		mainWindow.getContentPane().add(resizeClipping);
+		mainWindow.getContentPane().add(dimensions);
+		mainWindow.getContentPane().add(clippingNewWidth);
+		mainWindow.getContentPane().add(clippingNewHeight);
+		mainWindow.getContentPane().add(newWidthLabel);
+		mainWindow.getContentPane().add(newHeightLabel);
 
+	}
+
+	private JLabel makeLabel(String text) {
+		JLabel label = new JLabel(text);
+		label.setBackground(Color.black);
+		label.setForeground(Color.white);
+		label.setFont(new Font("Arial", Font.ITALIC, 16));
+		return label;
 	}
 
 	private JButton makeButton(String text) {
@@ -299,6 +348,48 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					imageToPasteTopLabel.getHeight());
 		}
 		switch (action) {
+		case "resize clipping":
+			if (copyToSelected && isClippingPasted()) {
+				int newHeight = 0;
+				int newWidth = 0;
+				try {
+					newHeight = Integer.valueOf(clippingNewHeight.getText());
+					newWidth = Integer.valueOf(clippingNewWidth.getText());
+				} catch (Exception e) {
+					clippingNewHeight.setText("");
+					clippingNewWidth.setText("");
+				}
+				if (newWidth > 0 && newWidth <= copyToImage.getWidth() && newHeight > 0
+						&& newHeight <= copyToImage.getHeight()) {
+					if (imageToPasteTopLabel != null) {
+						imageToPasteToLayeredPane.remove(imageToPasteTopLabel);
+					}
+					
+					imageToPasteTopLabel = null;
+					repaintCopyTo();
+					pastedClipping = Scalr.resize(clippings.get(currentClippingIconIndex), newWidth,
+							newHeight);
+					
+					imageToPasteTopLabel = new JLabel(new ImageIcon(pastedClipping));
+					imageToPasteTopLabel.setBounds(0, 0, newWidth, newHeight);
+					imageToPasteToLayeredPane.add(imageToPasteTopLabel);
+					imageToPasteToLayeredPane.moveToFront(imageToPasteTopLabel);
+					setStartX(0);
+					setStartY(0);
+					setEndX(newWidth - 1);
+					setEndY(newHeight - 1);
+					imageToPasteTopLabel.setVisible(false);
+					imageToPasteTopLabel.setVisible(true);
+					dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
+					dimensions.append("\nclipping dimensions: " + newWidth + " x "
+							+ newHeight);
+					setClippingPasted(true);
+					showResizeClipping(isClippingPasted());
+				}
+				clippingNewHeight.setText("");
+				clippingNewWidth.setText("");
+
+			}
 		case "highlight":
 			if (highlight.isSelected()) {
 				unHighlight.setSelected(false);
@@ -313,6 +404,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			break;
 		case "copy from":
 			showClippingChoice(clippings.size() > 0);
+			showResizeClipping(false);
 			copyTo.setEnabled(true);
 			copyFrom.setEnabled(false);
 			imageToHighlightScrollPane.setVisible(true);
@@ -330,6 +422,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				zoomAdjustment.setVisible(true);
 				sliderLabel.setVisible(true);
 			}
+			if (copyFromImage != null) {
+				dimensions.setText("image dimensions: " + copyFromImage.getWidth() + " x " + copyFromImage.getHeight());
+			} else {
+				dimensions.setText("");
+			}
 			moveLeft.setVisible(false);
 			moveUp.setVisible(false);
 			moveRight.setVisible(false);
@@ -341,7 +438,17 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				zoomAdjustment.setVisible(false);
 				sliderLabel.setVisible(false);
 			}
-			showClippingChoice(copyToImage != null);
+			if (copyToImage != null) {
+				dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
+				if (isClippingPasted()) {
+					dimensions.append("\nclipping dimensions: " + getPastedClipping().getWidth() + " x "
+							+ getPastedClipping().getHeight());
+				}
+			} else {
+				dimensions.setText("");
+			}
+			showResizeClipping(isClippingPasted());
+			showClippingChoice(clippings.size() > 0);
 			imageToHighlightScrollPane.setVisible(false);
 			imageToPasteToScrollPane.setVisible(true);
 			copyTo.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -362,6 +469,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				moveRight.setVisible(true);
 				moveDown.setVisible(true);
 				movingArrows.setVisible(true);
+				resizeClipping.setVisible(true);
 			}
 			break;
 		case "edit image":
@@ -482,6 +590,10 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						imageToPasteToLayeredPane.add(imageToPasteLabel);
 						repaintCopyTo();
 						setClippingPasted(false);
+						if (clippings.size() > 0) {
+							showClippingChoice(true);
+						}
+						dimensions.setText("image dimensions: " + width + " x " + height);
 					}
 
 				}
@@ -553,8 +665,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					setEndY(pastedClipping.getHeight() - 1);
 					imageToPasteTopLabel.setVisible(false);
 					imageToPasteTopLabel.setVisible(true);
-
+					dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
+					dimensions.append("\nclipping dimensions: " + getPastedClipping().getWidth() + " x "
+							+ getPastedClipping().getHeight());
 					setClippingPasted(true);
+					showResizeClipping(isClippingPasted());
 				}
 			} else if (copyFromSelected) {
 				insertImageIntoCopyFrom(null);
@@ -562,6 +677,14 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			break;
 		}
 
+	}
+
+	private void showResizeClipping(boolean arg) {
+		resizeClipping.setVisible(arg);
+		clippingNewHeight.setVisible(arg);
+		clippingNewWidth.setVisible(arg);
+		newWidthLabel.setVisible(arg);
+		newHeightLabel.setVisible(arg);
 	}
 
 	private void insertImageIntoCopyFrom(String path) {
@@ -596,6 +719,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		 * System.out.println("number of colors: " + colors.size()); // test //
 		 * 
 		 */
+		dimensions.setText("image dimensions: " + width + " x " + height);
 		setPrimaryCopyFromHeight(height);
 		setPrimaryCopyFromWidth(width);
 		imageToHighlightLayeredPane.removeAll();
