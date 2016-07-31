@@ -364,12 +364,23 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					if (imageToPasteTopLabel != null) {
 						imageToPasteToLayeredPane.remove(imageToPasteTopLabel);
 					}
-					
+
 					imageToPasteTopLabel = null;
 					repaintCopyTo();
-					pastedClipping = Scalr.resize(clippings.get(currentClippingIconIndex), newWidth,
-							newHeight);
-					
+					int currentHeight = clippings.get(currentClippingIconIndex).getHeight();
+					int currentWidth = clippings.get(currentClippingIconIndex).getWidth();
+					BufferedImage tempClipping = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+					for (int x = 0; x < newWidth; x++) {
+						for (int y = 0; y < newHeight; y++) {
+							tempClipping.setRGB(x, y,
+									clippings.get(currentClippingIconIndex).getRGB(
+											(currentWidth * 100 / newWidth) * x / 100,
+											(currentHeight * 100 / newHeight) * y / 100));
+						}
+					}
+					pastedClipping = null;
+					pastedClipping = tempClipping;
+
 					imageToPasteTopLabel = new JLabel(new ImageIcon(pastedClipping));
 					imageToPasteTopLabel.setBounds(0, 0, newWidth, newHeight);
 					imageToPasteToLayeredPane.add(imageToPasteTopLabel);
@@ -381,8 +392,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					imageToPasteTopLabel.setVisible(false);
 					imageToPasteTopLabel.setVisible(true);
 					dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
-					dimensions.append("\nclipping dimensions: " + newWidth + " x "
-							+ newHeight);
+					dimensions.append("\nclipping dimensions: " + newWidth + " x " + newHeight);
 					setClippingPasted(true);
 					showResizeClipping(isClippingPasted());
 				}
