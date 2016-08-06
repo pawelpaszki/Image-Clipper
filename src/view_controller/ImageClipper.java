@@ -469,6 +469,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			} else {
 				dimensions.setText("");
 			}
+			resetPasteClippingsButtons();
 			break;
 		case "copy to":
 			if (zoomAdjustment != null && sliderLabel != null) {
@@ -500,6 +501,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			unHighlight.setVisible(false);
 			highlightSizePick.setVisible(false);
 			copyToClipboard.setVisible(false);
+			resetPasteClippingsButtons();
 			break;
 		case "edit image":
 			setEditImageSelected(true);
@@ -706,6 +708,17 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			break;
 		}
 
+	}
+
+	private void resetPasteClippingsButtons() {
+		pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(0)));
+		setCurrentClippingIconIndex(0);
+		lowerIndexClipping.setEnabled(false);
+		if ((getCurrentClippingIconIndex() + 1) == clippings.size()) {
+			higherIndexClipping.setEnabled(false);
+		} else {
+			higherIndexClipping.setEnabled(true);
+		}
 	}
 
 	private void insertImageIntoCopyFrom(String path) {
