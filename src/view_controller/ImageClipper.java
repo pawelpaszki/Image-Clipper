@@ -42,6 +42,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import model.Point;
 import model.Scalr;
+import utils.ImageRotator;
 
 public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener, ChangeListener {
 
@@ -50,7 +51,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private boolean clippingPasted;
 	private boolean copyFromSelected;
 	private boolean copyToSelected;
-	private boolean editImageSelected;
 	private boolean newClippingAdded;
 	private BufferedImage copyFromImage;
 	private BufferedImage copyFromZoom2;
@@ -86,7 +86,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JButton copyFrom;
 	private JButton copyTo;
 	private JButton copyToClipboard;
-	private JButton editImage;
 	private JButton higherIndexClipping;
 	private JButton loadImage;
 	private JButton lowerIndexClipping;
@@ -103,7 +102,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JLabel imageToHighlightTopLabel;
 	private JLabel imageToPasteLabel;
 	private JLabel imageToPasteTopLabel;
-	private JLabel movingArrows;
 	private JLabel sliderLabel;
 	private JLayeredPane imageToHighlightLayeredPane;
 	private JLayeredPane imageToPasteToLayeredPane;
@@ -122,6 +120,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JPanel clippingsManipulation;
 	private boolean clippingRotated;
 	private JButton rotateTiny;
+	private int currentlyRotatedBy;
+	private JLabel moveClippings;
 
 	public static void main(String[] args) {
 		// standard thread invocation in swing apps
@@ -160,14 +160,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		selectTabPanel.setBounds(5, 75, 300, 40);
 		selectTabPanel.setBorder(new LineBorder(Color.white, 1));
 		selectTabPanel.setBackground(Color.black);
-		selectTabPanel.setLayout(new GridLayout(1, 3));
+		selectTabPanel.setLayout(new GridLayout(1, 2));
 
 		copyFrom = makeButton("copy from", false);
 		copyTo = makeButton("copy to", false);
-		editImage = makeButton("edit image", false);
 		selectTabPanel.add(copyFrom);
 		selectTabPanel.add(copyTo);
-		selectTabPanel.add(editImage);
 
 		loadImage = makeButton("load image", true);
 
@@ -175,7 +173,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		loadImage.setIcon(new ImageIcon("src/resources/load_image.png"));
 		copyFrom.setIcon(new ImageIcon("src/resources/copy_from.png"));
 		copyTo.setIcon(new ImageIcon("src/resources/copy_to.png"));
-		editImage.setIcon(new ImageIcon("src/resources/edit_image.png"));
 
 		highlight = new JCheckBox("highlight");
 		highlight.setBounds(650, 80, 80, 30);
@@ -248,28 +245,30 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		clippingsManipulation.setLayout(null);
 
 		moveLeft = makeButton("left", false);
-		moveLeft.setBounds(5, 45, 30, 30);
+		moveLeft.setBounds(5, 55, 30, 30);
 		moveLeft.setIcon(new ImageIcon("src/resources/left.png"));
 		clippingsManipulation.add(moveLeft);
 
 		moveUp = makeButton("up", false);
-		moveUp.setBounds(45, 5, 30, 30);
+		moveUp.setBounds(35, 25, 30, 30);
 		moveUp.setIcon(new ImageIcon("src/resources/up.png"));
 		clippingsManipulation.add(moveUp);
 
 		moveRight = makeButton("right", false);
-		moveRight.setBounds(85, 45, 30, 30);
+		moveRight.setBounds(65, 55, 30, 30);
 		moveRight.setIcon(new ImageIcon("src/resources/right.png"));
 		clippingsManipulation.add(moveRight);
 
 		moveDown = makeButton("down", false);
-		moveDown.setBounds(45, 85, 30, 30);
+		moveDown.setBounds(35, 85, 30, 30);
 		moveDown.setIcon(new ImageIcon("src/resources/down.png"));
 		clippingsManipulation.add(moveDown);
 
-		movingArrows = new JLabel(new ImageIcon("src/resources/arrows.png"));
-		movingArrows.setBounds(35, 35, 50, 50);
-		clippingsManipulation.add(movingArrows);
+		moveClippings = new JLabel("move clipping: ", JLabel.CENTER);
+		moveClippings.setBounds(5, 5, 100, 20);
+		moveClippings.setFont(new Font("Arial", Font.BOLD, 12));
+		moveClippings.setForeground(Color.white);
+		clippingsManipulation.add(moveClippings);
 
 		resizeClipping = makeButton("resize clipping", false);
 		resizeClipping.setBounds(145, 40, 120, 30);
@@ -389,10 +388,65 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					imageToPasteTopLabel.getHeight());
 		}
 		switch (action) {
+		case "rotate big":
+		case "rotate small":
+		case "rotate tiny":
+			BufferedImage rotatedClipping = null;
+			switch (action) {
+			case "rotate big":
+				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+						12 + getCurrentlyRotatedBy());
+				break;
+			case "rotate small":
+				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+						3 + getCurrentlyRotatedBy());
+				break;
+			case "rotate tiny":
+				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+						1 + getCurrentlyRotatedBy());
+				break;
+			}
+			int newHeight = rotatedClipping.getHeight();
+			int newWidth = rotatedClipping.getWidth();
+			if (newHeight <= copyToImage.getHeight() && newWidth <= copyToImage.getWidth()) {
+				if (imageToPasteTopLabel != null) {
+					imageToPasteToLayeredPane.remove(imageToPasteTopLabel);
+				}
+				imageToPasteTopLabel = null;
+				repaintCopyTo();
+				pastedClipping = rotatedClipping;
+
+				imageToPasteTopLabel = new JLabel(new ImageIcon(pastedClipping));
+				imageToPasteTopLabel.setBounds(0, 0, newWidth, newHeight);
+				imageToPasteToLayeredPane.add(imageToPasteTopLabel);
+				imageToPasteToLayeredPane.moveToFront(imageToPasteTopLabel);
+				setStartX(0);
+				setStartY(0);
+				setEndX(newWidth - 1);
+				setEndY(newHeight - 1);
+				imageToPasteTopLabel.setVisible(false);
+				imageToPasteTopLabel.setVisible(true);
+				dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
+				dimensions.append("\nclipping dimensions: " + newWidth + " x " + newHeight);
+				setClippingPasted(true);
+				setClippingRotated(true);
+				switch (action) {
+				case "rotate big":
+					setCurrentlyRotatedBy(getCurrentlyRotatedBy() + 12);
+					break;
+				case "rotate small":
+					setCurrentlyRotatedBy(getCurrentlyRotatedBy() + 3);
+					break;
+				case "rotate tiny":
+					setCurrentlyRotatedBy(getCurrentlyRotatedBy() + 1);
+					break;
+				}
+			}
+			break;
 		case "resize clipping":
 			if (copyToSelected && isClippingPasted()) {
-				int newHeight = 0;
-				int newWidth = 0;
+				newHeight = 0;
+				newWidth = 0;
 				try {
 					newHeight = Integer.valueOf(clippingNewHeight.getText());
 					newWidth = Integer.valueOf(clippingNewWidth.getText());
@@ -408,8 +462,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 					imageToPasteTopLabel = null;
 					repaintCopyTo();
-					int currentHeight = clippings.get(currentClippingIconIndex).getHeight();
-					int currentWidth = clippings.get(currentClippingIconIndex).getWidth();
+					int currentHeight = 0;
+					int currentWidth = 0;
+					if (!isClippingRotated()) {
+						currentHeight = clippings.get(currentClippingIconIndex).getHeight();
+						currentWidth = clippings.get(currentClippingIconIndex).getWidth();
+					} else {
+						currentHeight = pastedClipping.getHeight();
+						currentWidth = pastedClipping.getWidth();
+					}
 					BufferedImage tempClipping = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
 					if (!isClippingRotated()) {
 						for (int x = 0; x < newWidth; x++) {
@@ -429,6 +490,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 							}
 						}
 					}
+
 					pastedClipping = null;
 					pastedClipping = tempClipping;
 
@@ -445,11 +507,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
 					dimensions.append("\nclipping dimensions: " + newWidth + " x " + newHeight);
 					setClippingPasted(true);
+					rotateBig.setVisible(false);
+					rotateSmall.setVisible(false);
+					rotateTiny.setVisible(false);
 				}
 				clippingNewHeight.setText("");
 				clippingNewWidth.setText("");
 
 			}
+			break;
 		case "highlight":
 			if (highlight.isSelected()) {
 				unHighlight.setSelected(false);
@@ -473,7 +539,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			copyTo.setBorder(null);
 			copyFromSelected = true;
 			copyToSelected = false;
-			setEditImageSelected(false);
 			if (imageToHighlightTopLabel != null && imageToHighlightTopLabel.getHeight() > 0) {
 				highlightSizePick.setVisible(true);
 				highlight.setVisible(true);
@@ -508,17 +573,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				dimensions.setText("");
 			}
 			clippingsManipulation.setVisible(isClippingPasted());
-			showClippingChoice(isClippingPasted() && copyToImage != null);
+			showClippingChoice(clippings.size() > 0 && copyToImage != null);
 			imageToHighlightScrollPane.setVisible(false);
 			imageToPasteToScrollPane.setVisible(true);
 			copyTo.setBorder(BorderFactory.createLoweredBevelBorder());
 			copyTo.setEnabled(false);
 			copyFrom.setEnabled(true);
-			editImage.setEnabled(true);
 			copyFrom.setBorder(null);
 			copyFromSelected = false;
 			copyToSelected = true;
-			setEditImageSelected(false);
 			highlight.setVisible(false);
 			unHighlight.setVisible(false);
 			highlightSizePick.setVisible(false);
@@ -527,13 +590,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				resetPasteClippingsButtons();
 			}
 			break;
-		case "edit image":
-			setEditImageSelected(true);
-			copyToSelected = false;
-			copyFromSelected = false;
-			copyTo.setEnabled(true);
-			copyFrom.setEnabled(true);
-			editImage.setEnabled(false);
 		case "copy to clipboard":
 			if (highlightedPixels.size() > 100) {
 
@@ -705,6 +761,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						double height = clippingHeight / resizeRatio;
 						pastedClipping = Scalr.resize(clippings.get(currentClippingIconIndex), ((int) width),
 								((int) height));
+						clippings.set(currentClippingIconIndex, pastedClipping);
 
 						System.out.println("image height: " + pastedClipping.getHeight());
 						System.out.println("image width: " + pastedClipping.getWidth());
@@ -726,6 +783,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 							+ getPastedClipping().getHeight());
 					setClippingPasted(true);
 					clippingsManipulation.setVisible(isClippingPasted());
+					rotateBig.setVisible(true);
+					rotateSmall.setVisible(true);
+					rotateTiny.setVisible(true);
+					setCurrentlyRotatedBy(0);
+					setClippingRotated(false);
 				}
 			} else if (copyFromSelected) {
 				insertImageIntoCopyFrom(null);
@@ -1379,7 +1441,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		moveUp.setVisible(clippingPasted);
 		moveRight.setVisible(clippingPasted);
 		moveDown.setVisible(clippingPasted);
-		movingArrows.setVisible(clippingPasted);
+		moveClippings.setVisible(clippingPasted);
 
 	}
 
@@ -1546,21 +1608,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	}
 
 	/**
-	 * @return the editImageSelected
-	 */
-	public boolean isEditImageSelected() {
-		return editImageSelected;
-	}
-
-	/**
-	 * @param editImageSelected
-	 *            the editImageSelected to set
-	 */
-	public void setEditImageSelected(boolean editImageSelected) {
-		this.editImageSelected = editImageSelected;
-	}
-
-	/**
 	 * @return the clippingRotated
 	 */
 	public boolean isClippingRotated() {
@@ -1573,5 +1620,20 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setClippingRotated(boolean clippingRotated) {
 		this.clippingRotated = clippingRotated;
+	}
+
+	/**
+	 * @return the currentlyRotatedBy
+	 */
+	public int getCurrentlyRotatedBy() {
+		return currentlyRotatedBy;
+	}
+
+	/**
+	 * @param currentlyRotatedBy
+	 *            the currentlyRotatedBy to set
+	 */
+	public void setCurrentlyRotatedBy(int currentlyRotatedBy) {
+		this.currentlyRotatedBy = currentlyRotatedBy;
 	}
 }
