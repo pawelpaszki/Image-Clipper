@@ -122,9 +122,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JButton rotateTiny;
 	private int currentlyRotatedBy;
 	private JLabel moveClippings;
+	private JButton embedClipping;
+	private JPanel embedOrSavePanel;
+	private JButton saveImage;
+	private int currentlyPastedClippingIndex;
+	private JButton flipVertical;
+	private JButton flipHorizontal;
 
 	public static void main(String[] args) {
-		// standard thread invocation in swing apps
+
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -240,7 +246,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		pasteClipping.setBounds(500, 10, 110, 110);
 
 		clippingsManipulation = new JPanel();
-		clippingsManipulation.setBounds(645, 5, 290, 118);
+		clippingsManipulation.setBounds(645, 5, 400, 118);
 		clippingsManipulation.setBackground(Color.black);
 		clippingsManipulation.setLayout(null);
 
@@ -308,7 +314,36 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		clippingNewHeight = new JTextField();
 		clippingNewHeight.setBounds(225, 15, 35, 20);
 		clippingsManipulation.add(clippingNewHeight);
+		
+		flipVertical = makeButton("left", false);
+		flipVertical.setBounds(290, 20, 100, 30);
+		flipVertical.setIcon(new ImageIcon("src/resources/flip_vertical.png"));
+		clippingsManipulation.add(flipVertical);
+
+		flipHorizontal = makeButton("left", false);
+		flipHorizontal.setBounds(290, 70, 100, 30);
+		flipHorizontal.setIcon(new ImageIcon("src/resources/flip_horizontal.png"));
+		clippingsManipulation.add(flipHorizontal);
+		
 		clippingsManipulation.setVisible(false);
+
+		embedClipping = makeButton("embed", false);
+		embedClipping.setBounds(5, 5, 120, 30);
+		embedClipping.setIcon(new ImageIcon("src/resources/embed.png"));
+		embedClipping.addActionListener(this);
+
+		saveImage = makeButton("embed", false);
+		saveImage.setBounds(5, 45, 120, 30);
+		saveImage.setIcon(new ImageIcon("src/resources/save_image.png"));
+		saveImage.addActionListener(this);
+
+		embedOrSavePanel = new JPanel();
+		embedOrSavePanel.setBounds(1050, 20, 130, 80);
+		embedOrSavePanel.setBackground(Color.black);
+		embedOrSavePanel.setLayout(null);
+		embedOrSavePanel.add(embedClipping);
+		embedOrSavePanel.add(saveImage);
+		embedOrSavePanel.setVisible(false);
 
 		mainWindow.getContentPane().add(selectTabPanel);
 		mainWindow.getContentPane().add(imageToHighlightScrollPane);
@@ -318,6 +353,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.getContentPane().add(highlightSizePick);
 		mainWindow.getContentPane().add(clippingsManipulation);
 		mainWindow.getContentPane().add(dimensions);
+		mainWindow.getContentPane().add(embedOrSavePanel);
 
 	}
 
@@ -394,20 +430,25 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			BufferedImage rotatedClipping = null;
 			switch (action) {
 			case "rotate big":
-				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+				rotatedClipping = ImageRotator.rotate(clippings.get(getCurrentlyPastedClippingIndex()),
 						12 + getCurrentlyRotatedBy());
 				break;
 			case "rotate small":
-				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+				rotatedClipping = ImageRotator.rotate(clippings.get(getCurrentlyPastedClippingIndex()),
 						3 + getCurrentlyRotatedBy());
 				break;
 			case "rotate tiny":
-				rotatedClipping = ImageRotator.rotate(clippings.get(currentClippingIconIndex),
+				rotatedClipping = ImageRotator.rotate(clippings.get(getCurrentlyPastedClippingIndex()),
 						1 + getCurrentlyRotatedBy());
 				break;
 			}
 			int newHeight = rotatedClipping.getHeight();
 			int newWidth = rotatedClipping.getWidth();
+			while (!(newHeight <= copyToImage.getHeight() && newWidth <= copyToImage.getWidth())) {
+				rotatedClipping = Scalr.resize(rotatedClipping, (int) (newWidth * 0.9), (int) (newHeight * 0.9));
+				newHeight = rotatedClipping.getHeight();
+				newWidth = rotatedClipping.getWidth();
+			}
 			if (newHeight <= copyToImage.getHeight() && newWidth <= copyToImage.getWidth()) {
 				if (imageToPasteTopLabel != null) {
 					imageToPasteToLayeredPane.remove(imageToPasteTopLabel);
@@ -465,8 +506,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					int currentHeight = 0;
 					int currentWidth = 0;
 					if (!isClippingRotated()) {
-						currentHeight = clippings.get(currentClippingIconIndex).getHeight();
-						currentWidth = clippings.get(currentClippingIconIndex).getWidth();
+						currentHeight = clippings.get(getCurrentlyPastedClippingIndex()).getHeight();
+						currentWidth = clippings.get(getCurrentlyPastedClippingIndex()).getWidth();
 					} else {
 						currentHeight = pastedClipping.getHeight();
 						currentWidth = pastedClipping.getWidth();
@@ -476,7 +517,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 						for (int x = 0; x < newWidth; x++) {
 							for (int y = 0; y < newHeight; y++) {
 								tempClipping.setRGB(x, y,
-										clippings.get(currentClippingIconIndex).getRGB(
+										clippings.get(getCurrentlyPastedClippingIndex()).getRGB(
 												(currentWidth * 100 / newWidth) * x / 100,
 												(currentHeight * 100 / newHeight) * y / 100));
 							}
@@ -516,6 +557,33 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 			}
 			break;
+		case "embed":
+			for (int x = getStartX(); x < getEndX(); x++) {
+				for (int y = getStartY(); y < getEndY(); y++) {
+					if (pastedClipping.getRGB(x - getStartX(), y - getStartY()) != fullyTransparentColor) {
+						copyToImage.setRGB(x, y, pastedClipping.getRGB(x - getStartX(), y - getStartY()));
+					}
+				}
+			}
+			int copyToHeight = copyToImage.getHeight();
+			int copyToWidth = copyToImage.getWidth();
+			imageToPasteToLayeredPane.removeAll();
+			imageToPasteLabel = new JLabel(new ImageIcon(copyToImage));
+			imageToPasteToLayeredPane.setPreferredSize(new Dimension(copyToWidth, copyToHeight));
+			setCopyToHeight(copyToHeight);
+			setCopyToWidth(copyToWidth);
+			imageToPasteLabel.setSize(new Dimension(copyToWidth, copyToHeight));
+
+			imageToPasteToLayeredPane.add(imageToPasteLabel);
+			repaintCopyTo();
+			setClippingPasted(false);
+			if (clippings.size() > 0) {
+				showClippingChoice(true);
+			}
+			dimensions.setText("image dimensions: " + copyToWidth + " x " + copyToHeight);
+			saveImage.setEnabled(true);
+			resetPasteClippingsButtons();
+			break;
 		case "highlight":
 			if (highlight.isSelected()) {
 				unHighlight.setSelected(false);
@@ -531,6 +599,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		case "copy from":
 			showClippingChoice(clippings.size() > 0);
 			clippingsManipulation.setVisible(false);
+			embedOrSavePanel.setVisible(false);
 			copyTo.setEnabled(true);
 			copyFrom.setEnabled(false);
 			imageToHighlightScrollPane.setVisible(true);
@@ -559,17 +628,26 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			}
 			break;
 		case "copy to":
+			embedOrSavePanel.setVisible(true);
+			if (isClippingPasted()) {
+				embedClipping.setEnabled(true);
+			} else {
+				embedClipping.setEnabled(false);
+			}
+
 			if (zoomAdjustment != null && sliderLabel != null) {
 				zoomAdjustment.setVisible(false);
 				sliderLabel.setVisible(false);
 			}
 			if (copyToImage != null) {
+				saveImage.setEnabled(true);
 				dimensions.setText("image dimensions: " + copyToImage.getWidth() + " x " + copyToImage.getHeight());
 				if (isClippingPasted()) {
 					dimensions.append("\nclipping dimensions: " + getPastedClipping().getWidth() + " x "
 							+ getPastedClipping().getHeight());
 				}
 			} else {
+				saveImage.setEnabled(false);
 				dimensions.setText("");
 			}
 			clippingsManipulation.setVisible(isClippingPasted());
@@ -705,6 +783,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 							showClippingChoice(true);
 						}
 						dimensions.setText("image dimensions: " + width + " x " + height);
+						saveImage.setEnabled(true);
 					}
 
 				}
@@ -788,6 +867,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					rotateTiny.setVisible(true);
 					setCurrentlyRotatedBy(0);
 					setClippingRotated(false);
+					embedClipping.setEnabled(true);
+					setCurrentlyPastedClippingIndex(currentClippingIconIndex);
 				}
 			} else if (copyFromSelected) {
 				insertImageIntoCopyFrom(null);
@@ -1635,5 +1716,20 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setCurrentlyRotatedBy(int currentlyRotatedBy) {
 		this.currentlyRotatedBy = currentlyRotatedBy;
+	}
+
+	/**
+	 * @return the currentlyPastedClippingIndex
+	 */
+	public int getCurrentlyPastedClippingIndex() {
+		return currentlyPastedClippingIndex;
+	}
+
+	/**
+	 * @param currentlyPastedClippingIndex
+	 *            the currentlyPastedClippingIndex to set
+	 */
+	public void setCurrentlyPastedClippingIndex(int currentlyPastedClippingIndex) {
+		this.currentlyPastedClippingIndex = currentlyPastedClippingIndex;
 	}
 }
