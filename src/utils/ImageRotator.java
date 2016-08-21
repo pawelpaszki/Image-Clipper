@@ -50,6 +50,26 @@ public class ImageRotator {
 	    return finalImage;
 	}
 
+	public static BufferedImage flipVertically(BufferedImage image) {
+		BufferedImage flippedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		for (int x = 0 ; x < image.getWidth(); x++) {
+			for (int y = 0, newY = image.getHeight()-1; y < image.getHeight(); y++, newY--) {
+				flippedImage.setRGB(x, y, image.getRGB(x, newY));
+			}
+		}
+		return flippedImage;
+	}
+	
+	public static BufferedImage flipHorizontally(BufferedImage image) {
+		BufferedImage flippedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		for (int x = 0, newX = image.getWidth() - 1; x < image.getWidth(); x++, newX--) {
+			for (int y = 0; y < image.getHeight(); y++) {
+				flippedImage.setRGB(x, y, image.getRGB(newX, y));
+			}
+		}
+		return flippedImage;
+	}
+	
 	private static GraphicsConfiguration getDefaultConfiguration() {
 	    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice gd = ge.getDefaultScreenDevice();

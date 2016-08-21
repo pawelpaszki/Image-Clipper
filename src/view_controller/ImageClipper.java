@@ -128,6 +128,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private int currentlyPastedClippingIndex;
 	private JButton flipVertical;
 	private JButton flipHorizontal;
+	private boolean flippedVertically;
+	private boolean flippedHorizontally;
 
 	public static void main(String[] args) {
 
@@ -315,12 +317,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		clippingNewHeight.setBounds(225, 15, 35, 20);
 		clippingsManipulation.add(clippingNewHeight);
 		
-		flipVertical = makeButton("left", false);
+		flipVertical = makeButton("vertically", false);
 		flipVertical.setBounds(290, 20, 100, 30);
 		flipVertical.setIcon(new ImageIcon("src/resources/flip_vertical.png"));
 		clippingsManipulation.add(flipVertical);
 
-		flipHorizontal = makeButton("left", false);
+		flipHorizontal = makeButton("horizontally", false);
 		flipHorizontal.setBounds(290, 70, 100, 30);
 		flipHorizontal.setIcon(new ImageIcon("src/resources/flip_horizontal.png"));
 		clippingsManipulation.add(flipHorizontal);
@@ -332,7 +334,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		embedClipping.setIcon(new ImageIcon("src/resources/embed.png"));
 		embedClipping.addActionListener(this);
 
-		saveImage = makeButton("embed", false);
+		saveImage = makeButton("save", false);
 		saveImage.setBounds(5, 45, 120, 30);
 		saveImage.setIcon(new ImageIcon("src/resources/save_image.png"));
 		saveImage.addActionListener(this);
@@ -455,6 +457,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				}
 				imageToPasteTopLabel = null;
 				repaintCopyTo();
+				if(isFlippedVertically()) {
+					rotatedClipping = ImageRotator.flipVertically(rotatedClipping);
+				}
+				if(isFlippedHorizontally()) {
+					rotatedClipping = ImageRotator.flipHorizontally(rotatedClipping);
+				}
 				pastedClipping = rotatedClipping;
 
 				imageToPasteTopLabel = new JLabel(new ImageIcon(pastedClipping));
@@ -481,6 +489,58 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				case "rotate tiny":
 					setCurrentlyRotatedBy(getCurrentlyRotatedBy() + 1);
 					break;
+				}
+			}
+			break;
+		case "vertically":
+		case "horizontally":
+			newHeight = pastedClipping.getHeight();
+			newWidth = pastedClipping.getWidth();
+			if (imageToPasteTopLabel != null) {
+				imageToPasteToLayeredPane.remove(imageToPasteTopLabel);
+			}
+			imageToPasteTopLabel = null;
+			repaintCopyTo();
+			switch (action) {
+			case "vertically":
+				pastedClipping = ImageRotator.flipVertically(pastedClipping);
+				if(isFlippedVertically()) {
+					setFlippedVertically(false);
+				} else {
+					setFlippedVertically(true);
+				}
+				break;
+			case "horizontally":
+				pastedClipping = ImageRotator.flipHorizontally(pastedClipping);
+				if (isFlippedHorizontally()) {
+					setFlippedHorizontally(false);
+				} else {
+					setFlippedHorizontally(true);
+				}
+				break;
+			}
+
+			imageToPasteTopLabel = new JLabel(new ImageIcon(pastedClipping));
+			imageToPasteTopLabel.setBounds(0, 0, newWidth, newHeight);
+			imageToPasteToLayeredPane.add(imageToPasteTopLabel);
+			imageToPasteToLayeredPane.moveToFront(imageToPasteTopLabel);
+			setStartX(0);
+			setStartY(0);
+			setEndX(newWidth - 1);
+			setEndY(newHeight - 1);
+			imageToPasteTopLabel.setVisible(false);
+			imageToPasteTopLabel.setVisible(true);
+			break;
+		case "save":
+			JFileChooser saveChooser = new JFileChooser(userDir);
+			int returnVal = saveChooser.showSaveDialog(mainWindow);
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				
+				try {
+				    File outputfile = new File(saveChooser.getSelectedFile() + ".png");
+				    ImageIO.write(copyToImage, "png", outputfile);
+				} catch (IOException e) {
+				    
 				}
 			}
 			break;
@@ -751,7 +811,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			if (copyFromSelected || copyToSelected) {
 				JFileChooser chooser = new JFileChooser(userDir);
 				chooser.setFileFilter(filter);
-				int returnVal = chooser.showOpenDialog(mainWindow);
+				returnVal = chooser.showOpenDialog(mainWindow);
 
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					if (copyFromSelected) {
@@ -869,6 +929,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					setClippingRotated(false);
 					embedClipping.setEnabled(true);
 					setCurrentlyPastedClippingIndex(currentClippingIconIndex);
+					setFlippedHorizontally(false);
+					setFlippedVertically(false);
 				}
 			} else if (copyFromSelected) {
 				insertImageIntoCopyFrom(null);
@@ -1731,5 +1793,33 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setCurrentlyPastedClippingIndex(int currentlyPastedClippingIndex) {
 		this.currentlyPastedClippingIndex = currentlyPastedClippingIndex;
+	}
+
+	/**
+	 * @return the flippedVertically
+	 */
+	public boolean isFlippedVertically() {
+		return flippedVertically;
+	}
+
+	/**
+	 * @param flippedVertically the flippedVertically to set
+	 */
+	public void setFlippedVertically(boolean flippedVertically) {
+		this.flippedVertically = flippedVertically;
+	}
+
+	/**
+	 * @return the flippedHorizontally
+	 */
+	public boolean isFlippedHorizontally() {
+		return flippedHorizontally;
+	}
+
+	/**
+	 * @param flippedHorizontally the flippedHorizontally to set
+	 */
+	public void setFlippedHorizontally(boolean flippedHorizontally) {
+		this.flippedHorizontally = flippedHorizontally;
 	}
 }
