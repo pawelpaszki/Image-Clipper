@@ -1,4 +1,4 @@
-package view_controller;
+
 
 import java.awt.Color;
 import java.awt.Component;
@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -39,11 +40,14 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
-import model.Point;
-import model.Scalr;
-import utils.ImageRotator;
-
+/**
+ * 
+ * @author Pawel Paszki
+ * 
+ * This class is a class, which generates the GUI and controls all the actions 
+ * which occur, when the application is run
+ *
+ */
 public class ImageClipper implements ActionListener, MouseMotionListener, MouseListener, ChangeListener {
 
 	private ArrayList<BufferedImage> addClippingButtonIcons;
@@ -146,6 +150,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		});
 	}
 
+	/**
+	 * initialisation of the GUI
+	 */
 	private void initialise() {
 
 		mainWindow = new JFrame("Image Clipper (developed by Pawel Paszki - pawelpaszki@gmail.com)");
@@ -178,9 +185,22 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		loadImage = makeButton("load image", true);
 
 		loadImage.setBounds(325, 80, 120, 30);
-		loadImage.setIcon(new ImageIcon("src/resources/load_image.png"));
-		copyFrom.setIcon(new ImageIcon("src/resources/copy_from.png"));
-		copyTo.setIcon(new ImageIcon("src/resources/copy_to.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/load_image.png"));
+			loadImage.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/copy_from.png"));
+			copyFrom.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/copy_to.png"));
+			copyTo.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
+		
 
 		highlight = new JCheckBox("highlight");
 		highlight.setBounds(650, 80, 80, 30);
@@ -209,7 +229,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		copyToClipboard = makeButton("copy to clipboard", true);
 		copyToClipboard.setBounds(940, 80, 140, 30);
 		copyToClipboard.setVisible(false);
-		copyToClipboard.setIcon(new ImageIcon("src/resources/copy_to_clipboard.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/copy_to_clipboard.png"));
+			copyToClipboard.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 
 		imageToHighlightLayeredPane = new JLayeredPane();
 
@@ -236,12 +260,20 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		lowerIndexClipping = makeButton("<", true);
 		lowerIndexClipping.setBounds(470, 10, 20, 110);
 		lowerIndexClipping.setVisible(false);
-		lowerIndexClipping.setIcon(new ImageIcon("src/resources/lower_index.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/lower_index.png"));
+			lowerIndexClipping.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 
 		higherIndexClipping = makeButton(">", true);
 		higherIndexClipping.setBounds(620, 10, 20, 110);
 		higherIndexClipping.setVisible(false);
-		higherIndexClipping.setIcon(new ImageIcon("src/resources/higher_index.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/higher_index.png"));
+			higherIndexClipping.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 
 		pasteClipping = makeButton("paste clipping", true);
 		pasteClipping.setVisible(false);
@@ -254,22 +286,38 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 		moveLeft = makeButton("left", false);
 		moveLeft.setBounds(5, 55, 30, 30);
-		moveLeft.setIcon(new ImageIcon("src/resources/left.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/left.png"));
+			moveLeft.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(moveLeft);
 
 		moveUp = makeButton("up", false);
 		moveUp.setBounds(35, 25, 30, 30);
-		moveUp.setIcon(new ImageIcon("src/resources/up.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/up.png"));
+			moveUp.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(moveUp);
 
 		moveRight = makeButton("right", false);
 		moveRight.setBounds(65, 55, 30, 30);
-		moveRight.setIcon(new ImageIcon("src/resources/right.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/right.png"));
+			moveRight.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(moveRight);
 
 		moveDown = makeButton("down", false);
 		moveDown.setBounds(35, 85, 30, 30);
-		moveDown.setIcon(new ImageIcon("src/resources/down.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/down.png"));
+			moveDown.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(moveDown);
 
 		moveClippings = new JLabel("move clipping: ", JLabel.CENTER);
@@ -280,25 +328,41 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 		resizeClipping = makeButton("resize clipping", false);
 		resizeClipping.setBounds(145, 40, 120, 30);
-		resizeClipping.setIcon(new ImageIcon("src/resources/resize.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/resize.png"));
+			resizeClipping.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		resizeClipping.addActionListener(this);
 		clippingsManipulation.add(resizeClipping);
 
 		rotateBig = makeButton("rotate big", false);
 		rotateBig.setBounds(145, 73, 40, 40);
-		rotateBig.setIcon(new ImageIcon("src/resources/rotateBig.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/rotateBig.png"));
+			rotateBig.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		rotateBig.addActionListener(this);
 		clippingsManipulation.add(rotateBig);
 
 		rotateSmall = makeButton("rotate small", false);
 		rotateSmall.setBounds(195, 78, 30, 30);
-		rotateSmall.setIcon(new ImageIcon("src/resources/rotateSmall.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/rotateSmall.png"));
+			rotateSmall.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		rotateSmall.addActionListener(this);
 		clippingsManipulation.add(rotateSmall);
 
 		rotateTiny = makeButton("rotate tiny", false);
 		rotateTiny.setBounds(235, 83, 20, 20);
-		rotateTiny.setIcon(new ImageIcon("src/resources/rotateTiny.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/rotateTiny.png"));
+			rotateTiny.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		rotateTiny.addActionListener(this);
 		clippingsManipulation.add(rotateTiny);
 
@@ -319,24 +383,40 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		
 		flipVertical = makeButton("vertically", false);
 		flipVertical.setBounds(290, 20, 100, 30);
-		flipVertical.setIcon(new ImageIcon("src/resources/flip_vertical.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/flip_vertical.png"));
+			flipVertical.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(flipVertical);
 
 		flipHorizontal = makeButton("horizontally", false);
 		flipHorizontal.setBounds(290, 70, 100, 30);
-		flipHorizontal.setIcon(new ImageIcon("src/resources/flip_horizontal.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/flip_horizontal.png"));
+			flipHorizontal.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		clippingsManipulation.add(flipHorizontal);
 		
 		clippingsManipulation.setVisible(false);
 
 		embedClipping = makeButton("embed", false);
 		embedClipping.setBounds(5, 5, 120, 30);
-		embedClipping.setIcon(new ImageIcon("src/resources/embed.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/embed.png"));
+			embedClipping.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		embedClipping.addActionListener(this);
 
 		saveImage = makeButton("save", false);
 		saveImage.setBounds(5, 45, 120, 30);
-		saveImage.setIcon(new ImageIcon("src/resources/save_image.png"));
+		try {
+			Image img = ImageIO.read(getClass().getResource("resources/save_image.png"));
+			saveImage.setIcon(new ImageIcon(img));
+		} catch (IOException ex) {
+		}
 		saveImage.addActionListener(this);
 
 		embedOrSavePanel = new JPanel();
@@ -358,7 +438,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.getContentPane().add(embedOrSavePanel);
 
 	}
-
+	
+	/**
+	 * This method takes one argument: 
+	 * @param arg true if there are any clippings copied from an image,
+	 * false otherwise. IF there are clippings - buttons to navigate 
+	 * between them will be visible
+	 */
 	private void showClippingChoice(boolean arg) {
 		lowerIndexClipping.setVisible(arg);
 		higherIndexClipping.setVisible(arg);
@@ -372,6 +458,11 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 	}
 
+	/**
+	 * 
+	 * @param text - text of the label
+	 * @return created label with black background and white font
+	 */
 	private JLabel makeLabel(String text) {
 		JLabel label = new JLabel(text);
 		label.setBackground(Color.black);
@@ -380,6 +471,13 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		return label;
 	}
 
+	/**
+	 * 
+	 * @param text - text of JButton
+	 * @param mainFrameButton - true, if the button belongs to mainFrame itself
+	 * false - if it belongs to some inner component
+	 * @return instance of a button 
+	 */
 	private JButton makeButton(String text, boolean mainFrameButton) {
 		JButton button = new JButton(text);
 		button.setFocusPainted(false);
@@ -392,9 +490,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		return button;
 	}
 
+	/**
+	 * this method control the whole app - decides what to do, when a button is pressed
+	 */
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		String action = event.getActionCommand();
+		/*
+		 * moving a clipping by one pixel up / down / left / right
+		 */
 		if (isClippingPasted()) {
 			switch (action) {
 			case "left":
@@ -426,6 +530,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 					imageToPasteTopLabel.getHeight());
 		}
 		switch (action) {
+		/*
+		 * rotation of a clipping
+		 */
 		case "rotate big":
 		case "rotate small":
 		case "rotate tiny":
@@ -492,6 +599,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				}
 			}
 			break;
+		/*
+		 * flipping a pasted clipping 
+		 */
 		case "vertically":
 		case "horizontally":
 			newHeight = pastedClipping.getHeight();
@@ -531,6 +641,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			imageToPasteTopLabel.setVisible(false);
 			imageToPasteTopLabel.setVisible(true);
 			break;
+		/*
+		 * save an image
+		 */
 		case "save":
 			JFileChooser saveChooser = new JFileChooser(userDir);
 			int returnVal = saveChooser.showSaveDialog(mainWindow);
@@ -544,6 +657,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				}
 			}
 			break;
+		/*
+		 * resize the clipping - only if new height / width does not exceed current height / width
+		 */
 		case "resize clipping":
 			if (copyToSelected && isClippingPasted()) {
 				newHeight = 0;
@@ -617,6 +733,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 			}
 			break;
+		/*
+		 * embeds pasted clipping at its current position into the "copy to" image
+		 */
 		case "embed":
 			for (int x = getStartX(); x < getEndX(); x++) {
 				for (int y = getStartY(); y < getEndY(); y++) {
@@ -656,6 +775,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				unHighlight.setSelected(true);
 			}
 			break;
+		/*
+		 * selects "copy from" tab
+		 */
 		case "copy from":
 			showClippingChoice(clippings.size() > 0);
 			clippingsManipulation.setVisible(false);
@@ -687,6 +809,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				resetPasteClippingsButtons();
 			}
 			break;
+		/*
+		 * selects "copy to" tab
+		 */
 		case "copy to":
 			embedOrSavePanel.setVisible(true);
 			if (isClippingPasted()) {
@@ -728,6 +853,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				resetPasteClippingsButtons();
 			}
 			break;
+		/*
+		 * copies highlighted clipping into the ArrayList of clippings
+		 */
 		case "copy to clipboard":
 			if (highlightedPixels.size() > 100) {
 
@@ -807,6 +935,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			}
 
 			break;
+		/*
+		 * loads an image - either into "copy to" tab or "copy from" tab
+		 */
 		case "load image":
 			if (copyFromSelected || copyToSelected) {
 				JFileChooser chooser = new JFileChooser(userDir);
@@ -850,6 +981,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 			}
 			break;
+		/*
+		 * flicks into next clipping (+1)
+		 */
 		case ">":
 			setCurrentClippingIconIndex(getCurrentClippingIconIndex() + 1);
 			lowerIndexClipping.setEnabled(true);
@@ -858,6 +992,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			}
 			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
 			break;
+			/*
+			 * flicks into previous clipping (-1)
+			 */
 		case "<":
 			setCurrentClippingIconIndex(getCurrentClippingIconIndex() - 1);
 			higherIndexClipping.setEnabled(true);
@@ -866,6 +1003,10 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			}
 			pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(getCurrentClippingIconIndex())));
 			break;
+		/*
+		 * pastes clipping into a "copy to" image and scales down the clipping, if
+		 * its height or width or both exceed the size of the "copy to" image
+		 */
 		case "paste clipping":
 			if (copyToSelected) {
 				if (imageToPasteLabel != null && imageToPasteLabel.getWidth() > 0) {
@@ -940,6 +1081,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 	}
 
+	/**
+	 * sets the paste clipping button to the first of the clippings
+	 */
 	private void resetPasteClippingsButtons() {
 		pasteClipping.setIcon(new ImageIcon(addClippingButtonIcons.get(0)));
 		setCurrentClippingIconIndex(0);
@@ -951,6 +1095,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		}
 	}
 
+	/**
+	 * this method deals with pasting an image / clipping into "copy from" tab.
+	 * depending on size - different sizes of an image can also be created in 
+	 * order to zoom in, if needed
+	 * @param path - if null - clipping is pasted
+	 */
 	private void insertImageIntoCopyFrom(String path) {
 		if (zoomAdjustment != null) {
 			zoomAdjustment.setVisible(false);
@@ -973,16 +1123,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		mainWindow.repaint();
 		int height = copyFromImage.getHeight();
 		int width = copyFromImage.getWidth();
-
-		/*
-		 * // test// ArrayList<Color> colors = new ArrayList<Color>(); for (int
-		 * x = 0; x < width; x++) { for (int y = 0; y < height; y++) { Color
-		 * color = new Color(copyFromImage.getRGB(x, y)); if
-		 * (!colors.contains(color)) { colors.add(color); } } }
-		 * 
-		 * System.out.println("number of colors: " + colors.size()); // test //
-		 * 
-		 */
 		dimensions.setText("image dimensions: " + width + " x " + height);
 		setPrimaryCopyFromHeight(height);
 		setPrimaryCopyFromWidth(width);
@@ -1090,18 +1230,27 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		}
 	}
 
+	/**
+	 * repaints copyTo Tab
+	 */
 	private void repaintCopyTo() {
 		imageToPasteToLayeredPane.repaint();
 		imageToPasteToLayeredPane.setVisible(false);
 		imageToPasteToLayeredPane.setVisible(true);
 	}
 
+	/**
+	 * repaints copyFrom Tab
+	 */
 	private void repaintCopyFrom() {
 		imageToHighlightLayeredPane.repaint();
 		imageToHighlightLayeredPane.setVisible(false);
 		imageToHighlightLayeredPane.setVisible(true);
 	}
-
+	
+	/**
+	 * makes the top copy from label transparent
+	 */
 	private void makeCopyFromTopTransparent() {
 		for (int x = 0; x < getCopyFromWidth(); x++) {
 			for (int y = 0; y < getCopyFromHeight(); y++) {
@@ -1110,18 +1259,34 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		}
 	}
 
+	/**
+	 * 
+	 * @return copy from height
+	 */
 	public int getCopyFromHeight() {
 		return copyFromHeight;
 	}
 
+	/**
+	 * sets copy from height as per: 
+	 * @param copyFromHeight
+	 */
 	public void setCopyFromHeight(int copyFromHeight) {
 		this.copyFromHeight = copyFromHeight;
 	}
 
+	/**
+	 * 
+	 * @return copy from width 
+	 */
 	public int getCopyFromWidth() {
 		return copyFromWidth;
 	}
 
+	/**
+	 * sets copy from width as per: 
+	 * @param copyFromWidth
+	 */
 	public void setCopyFromWidth(int copyFromWidth) {
 		this.copyFromWidth = copyFromWidth;
 	}
@@ -1156,6 +1321,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		this.copyToWidth = copyToWidth;
 	}
 
+	/**
+	 * deals with dragging a mouse inside a JscrollPane
+	 */
 	@Override
 	public void mouseDragged(MouseEvent arg0) {
 		if (arg0.getX() >= 0 && arg0.getX() <= getCopyFromWidth() && arg0.getY() >= 0
@@ -1526,6 +1694,10 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		// not used
 	}
 
+	/**
+	 * deals with pressing mouse inside JscrollPane, either if copyFrom or
+	 * copyTo tabs are selected and there is an image loaded
+	 */
 	@Override
 	public void mousePressed(MouseEvent arg0) {
 		if (imageToPasteTopLabel != null) {
@@ -1648,6 +1820,9 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		this.primaryEndY = primaryEndY;
 	}
 
+	/**
+	 * reacts to a change of state of the JSlider used to zoom in / out
+	 */
 	@Override
 	public void stateChanged(ChangeEvent arg0) {
 		JSlider source = (JSlider) arg0.getSource();

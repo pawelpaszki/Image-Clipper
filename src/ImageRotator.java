@@ -1,4 +1,4 @@
-package utils;
+
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -7,9 +7,24 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 
+/**
+ * 
+ * @author Pawel Paszki - some of the code from: 
+ * http://stackoverflow.com/questions/4156518/rotate-an-image-in-java 
+ * 
+ * This class is used to rotate / flip vertically / flip horizontally 
+ * an instance of BufferedImage
+ */
 public class ImageRotator {
 	
 	private static final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
+	
+	/**
+	 * 
+	 * @param image - image to be rotated
+	 * @param degreeAngle - angle to rotate the image by
+	 * @return rotated instance of the BufferedImage
+	 */
 	public static BufferedImage rotate(BufferedImage image, double degreeAngle) {
 		double angle = Math.toRadians(degreeAngle);
 	    double sin = Math.abs(Math.sin(degreeAngle)), cos = Math.abs(Math.cos(degreeAngle));
@@ -50,6 +65,11 @@ public class ImageRotator {
 	    return finalImage;
 	}
 
+	/**
+	 * 
+	 * @param image - BufferedImage to be flipped vertically
+	 * @return flipped image
+	 */
 	public static BufferedImage flipVertically(BufferedImage image) {
 		BufferedImage flippedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		for (int x = 0 ; x < image.getWidth(); x++) {
@@ -60,6 +80,11 @@ public class ImageRotator {
 		return flippedImage;
 	}
 	
+	/**
+	 * 
+	 * @param image - BufferedImage to be flipped horizontally
+	 * @return flipped image
+	 */
 	public static BufferedImage flipHorizontally(BufferedImage image) {
 		BufferedImage flippedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		for (int x = 0, newX = image.getWidth() - 1; x < image.getWidth(); x++, newX--) {
