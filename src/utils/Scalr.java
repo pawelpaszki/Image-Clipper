@@ -1,3 +1,5 @@
+package utils;
+
 /**   
  * Copyright 2011 The Buzz Media, LLC
  * 

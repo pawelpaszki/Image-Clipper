@@ -1,4 +1,4 @@
-
+package view_controller;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -40,6 +40,10 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import model.Point;
+import utils.ImageRotator;
+import utils.Scalr;
 /**
  * 
  * @author Pawel Paszki
