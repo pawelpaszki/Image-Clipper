@@ -599,9 +599,15 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 				try {
 					File outputfile = new File(saveChooser.getSelectedFile() + ".png");
 					switch(action) {
+					/*
+					 * saves current state of the copyToImage to a disk as a .png file
+					 */
 					case "save":
 						ImageIO.write(copyToImage, "png", outputfile);
 						break;
+					/*
+					 * saves currently visible clipping to a disk as a .png file
+					 */
 					case "save clipping":
 						ImageIO.write(clippings.get(currentClippingIconIndex), "png", outputfile);
 						break;
@@ -769,7 +775,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		 * selects "copy to" tab
 		 */
 		case "copy to":
-			saveClipping.setVisible(false);
+			
 			embedOrSavePanel.setVisible(true);
 			if (isClippingPasted()) {
 				embedClipping.setEnabled(true);
@@ -809,6 +815,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			if (clippings.size() > 0) {
 				resetPasteClippingsButtons();
 			}
+			saveClipping.setVisible(false);
 			break;
 		/*
 		 * copies highlighted clipping into the ArrayList of clippings
