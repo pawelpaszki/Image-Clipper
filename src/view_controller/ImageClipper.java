@@ -139,6 +139,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private boolean flippedVertically;
 	private boolean flippedHorizontally;
 	private JButton saveClipping;
+	private Point startRectangular = new Point(-1, -1);
+	private Point endRectangular;
 
 	public static void main(String[] args) {
 
@@ -208,7 +210,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		unHighlight.addActionListener(this);
 		unHighlight.setVisible(false);
 
-		String[] highlightSizes = { "small", "medium", "large", "x large", "xxxl" };
+		String[] highlightSizes = { "small", "medium", "large", "x large", "xxxl", "rectangular" };
 
 		highlightSizePick = new JComboBox<String>(highlightSizes);
 		highlightSizePick.setSelectedItem(null);
@@ -222,12 +224,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		copyToClipboard.setBounds(940, 80, 140, 30);
 		copyToClipboard.setVisible(false);
 		copyToClipboard.setIcon(new ImageIcon("src/resources/copy_to_clipboard.png"));
-		
+
 		saveClipping = makeButton("save clipping", true);
 		saveClipping.setBounds(940, 40, 140, 30);
 		saveClipping.setVisible(false);
 		saveClipping.setIcon(new ImageIcon("src/resources/save_clipping.png"));
-		
+
 		imageToHighlightLayeredPane = new JLayeredPane();
 
 		imageToHighlightScrollPane = new JScrollPane(imageToHighlightLayeredPane);
@@ -396,7 +398,6 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			higherIndexClipping.setEnabled(false);
 		}
 		lowerIndexClipping.setEnabled(false);
-		
 
 	}
 
@@ -598,9 +599,10 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 				try {
 					File outputfile = new File(saveChooser.getSelectedFile() + ".png");
-					switch(action) {
+					switch (action) {
 					/*
-					 * saves current state of the copyToImage to a disk as a .png file
+					 * saves current state of the copyToImage to a disk as a
+					 * .png file
 					 */
 					case "save":
 						ImageIO.write(copyToImage, "png", outputfile);
@@ -775,7 +777,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		 * selects "copy to" tab
 		 */
 		case "copy to":
-			
+
 			embedOrSavePanel.setVisible(true);
 			if (isClippingPasted()) {
 				embedClipping.setEnabled(true);
@@ -1684,12 +1686,81 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			int y = arg0.getY();
 			Color newColor = new Color(copyFromImage.getRGB(x, y));
 			System.out.println(newColor);
+			if (String.valueOf(highlightSizePick.getSelectedItem()).equals("rectangular")) {
+				setStartRectangular(new Point(x, y));
+			}
+		}
+		if (copyFromImage != null && copyFromSelected
+				&& String.valueOf(highlightSizePick.getSelectedItem()).equals("rectangular")
+				&& arg0.getX() < copyFromImage.getWidth() && arg0.getY() < copyFromImage.getHeight()) {
+			int x = arg0.getX();
+			int y = arg0.getY();
+			setStartRectangular(new Point(x, y));
+			System.out.println("x: " + getStartRectangular().getX() + " || y: " + getStartRectangular().getY());
 		}
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
-		// not used
+		if (copyFromImage != null && copyFromSelected
+				&& String.valueOf(highlightSizePick.getSelectedItem()).equals("rectangular")
+				&& arg0.getX() < copyFromImage.getWidth() && arg0.getY() < copyFromImage.getHeight() && arg0.getX() >= 0
+				&& arg0.getY() >= 0) {
+			int x = arg0.getX();
+			int y = arg0.getY();
+			setEndRectangular(new Point(x, y));
+
+			if (!(getStartRectangular().getX() == -1)) {
+				System.out.println(
+						"start: x: " + getStartRectangular().getX() + " || y: " + getStartRectangular().getY());
+				System.out.println("end: x: " + getEndRectangular().getX() + " || y: " + getEndRectangular().getY());
+				int minX = 0;
+				int minY = 0;
+				int maxX = 0;
+				int maxY = 0;
+				if (getStartRectangular().getX() > getEndRectangular().getX()) {
+					minX = getEndRectangular().getX();
+					maxX = getStartRectangular().getX() + 1;
+				} else {
+					minX = getStartRectangular().getX();
+					maxX = getEndRectangular().getX() + 1;
+				}
+				if (getStartRectangular().getY() > getEndRectangular().getY()) {
+					minY = getEndRectangular().getY();
+					maxY = getStartRectangular().getY() + 1;
+				} else {
+					minY = getStartRectangular().getY();
+					maxY = getEndRectangular().getY() + 1;
+				}
+
+				highlightPixels(minX, minY, maxX, maxY);
+				setStartRectangular(new Point(-1, -1));
+			}
+		} else if (copyFromImage != null && copyFromSelected
+				&& String.valueOf(highlightSizePick.getSelectedItem()).equals("rectangular")
+				&& (arg0.getX() < copyFromImage.getWidth() || arg0.getY() < copyFromImage.getHeight())
+				|| arg0.getX() < 0 || arg0.getY() < 0) {
+			setStartRectangular(new Point(-1, -1));
+			setEndRectangular(new Point(-1, -1));
+		}
+	}
+
+	private void highlightPixels(int minX, int minY, int maxX, int maxY) {
+
+		for (int x = minX; x < maxX; x++) {
+			for (int y = minY; y < maxY; y++) {
+				if (highlight.isSelected()) {
+					highlightedPixels.add(new Point(x, y));
+					topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+				} else if (unHighlight.isSelected()) {
+					highlightedPixels.remove(new Point(x, y));
+					topCopyFromLabelBackground.setRGB(x, y, fullyTransparentColor);
+				}
+			}
+		}
+
+		imageToHighlightTopLabel.setVisible(false);
+		imageToHighlightTopLabel.setVisible(true);
 	}
 
 	/**
@@ -1966,5 +2037,35 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	 */
 	public void setFlippedHorizontally(boolean flippedHorizontally) {
 		this.flippedHorizontally = flippedHorizontally;
+	}
+
+	/**
+	 * @return the endRectangular
+	 */
+	public Point getEndRectangular() {
+		return endRectangular;
+	}
+
+	/**
+	 * @param endRectangular
+	 *            the endRectangular to set
+	 */
+	public void setEndRectangular(Point endRectangular) {
+		this.endRectangular = endRectangular;
+	}
+
+	/**
+	 * @return the startRectangular
+	 */
+	public Point getStartRectangular() {
+		return startRectangular;
+	}
+
+	/**
+	 * @param startRectangular
+	 *            the startRectangular to set
+	 */
+	public void setStartRectangular(Point startRectangular) {
+		this.startRectangular = startRectangular;
 	}
 }
