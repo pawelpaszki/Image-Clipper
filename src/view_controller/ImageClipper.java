@@ -69,7 +69,8 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private BufferedImage topCopyFromLabelBackground;
 	private final String userDirLocation = System.getProperty("user.dir");
 	private final File userDir = new File(userDirLocation);
-	private final FileNameExtensionFilter filter = new FileNameExtensionFilter("images", "jpg", "gif", "png", "bmp");
+	private final FileNameExtensionFilter filter = new FileNameExtensionFilter("images", "jpg", "gif", "jpeg", "png",
+			"bmp");
 	private final int fullyTransparentColor = new Color(0, 0, 0, 0).getRGB();
 	private final int highlightColor = new Color(255, 0, 0, 192).getRGB();
 	private HashSet<Point> highlightedPixels = new HashSet<Point>();
@@ -141,6 +142,12 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	private JButton saveClipping;
 	private Point startRectangular = new Point(-1, -1);
 	private Point endRectangular;
+	private int currentRed;
+	private int currentBlue;
+	private int currentGreen;
+	private int counter;
+	private int startHighlightX;
+	private int startHighlightY;
 
 	public static void main(String[] args) {
 
@@ -210,7 +217,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 		unHighlight.addActionListener(this);
 		unHighlight.setVisible(false);
 
-		String[] highlightSizes = { "small", "medium", "large", "x large", "xxxl", "rectangular" };
+		String[] highlightSizes = { "small", "medium", "large", "x large", "xxxl", "rectangular", "flood" };
 
 		highlightSizePick = new JComboBox<String>(highlightSizes);
 		highlightSizePick.setSelectedItem(null);
@@ -915,7 +922,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 						String path = chooser.getSelectedFile().getAbsolutePath();
 						insertImageIntoCopyFrom(path);
-
+						highlightedPixels = new HashSet<Point>();
 					} else if (copyToSelected) {
 						File file = new File(chooser.getSelectedFile().getAbsolutePath());
 						copyToImage = null;
@@ -1651,7 +1658,62 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
-		// not used
+		if (highlight.isSelected() && String.valueOf(highlightSizePick.getSelectedItem()).equals("flood")) {
+			int x = arg0.getX();
+			int y = arg0.getY();
+			counter = 0;
+			System.out.println(copyFromImage.getRGB(x, y));
+			Color color = new Color(copyFromImage.getRGB(x, y));
+			currentRed = color.getRed();
+			currentBlue = color.getBlue();
+			currentGreen = color.getGreen();
+			startHighlightX = x;
+			startHighlightY = y;
+			if (getValueAt(x, y) != -1) {
+				apply(x, y);
+				highlightedPixels.add(new Point(x, y));
+				topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+			}
+		}
+	}
+
+	private void apply(int x, int y) {
+		if (getValueAt(x, y) != -1 && (Math.abs(x - startHighlightX) < 50) && (Math.abs(y - startHighlightY) < 50)
+				&& !highlightedPixels.contains(new Point(x, y))) {
+			Color color = new Color(getValueAt(x, y));
+			int newRed = color.getRed();
+			int newBlue = color.getBlue();
+			int newGreen = color.getGreen();
+			System.out.println(Math.sqrt(Math.pow(newRed - currentRed, 2) + Math.pow(newGreen - currentGreen, 2)
+					+ Math.pow(newBlue - currentBlue, 2)));
+			if (Math.sqrt(Math.pow(newRed - currentRed, 2) + Math.pow(newGreen - currentGreen, 2)
+					+ Math.pow(newBlue - currentBlue, 2)) < 200) {
+				counter++;
+				highlightedPixels.add(new Point(x, y));
+				topCopyFromLabelBackground.setRGB(x, y, highlightColor);
+				imageToHighlightTopLabel.setVisible(false);
+				imageToHighlightTopLabel.setVisible(true);
+				apply(x + 1, y);
+				apply(x - 1, y);
+				apply(x, y + 1);
+				apply(x, y - 1);
+			}
+		} else {
+			return;
+		}
+
+	}
+
+	private int getValueAt(int x, int y) {
+		if (copyFromImage != null) {
+			if (x < 0 || y < 0 || x >= copyFromImage.getWidth() || y >= copyFromImage.getHeight()) {
+				return -1;
+			} else {
+				return copyFromImage.getRGB(x, y);
+			}
+		} else {
+			return -1;
+		}
 	}
 
 	@Override
