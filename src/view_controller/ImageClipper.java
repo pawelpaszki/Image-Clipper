@@ -1662,7 +1662,7 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 			int x = arg0.getX();
 			int y = arg0.getY();
 			counter = 0;
-			System.out.println(copyFromImage.getRGB(x, y));
+			//System.out.println(copyFromImage.getRGB(x, y));
 			Color color = new Color(copyFromImage.getRGB(x, y));
 			currentRed = color.getRed();
 			currentBlue = color.getBlue();
@@ -1678,17 +1678,16 @@ public class ImageClipper implements ActionListener, MouseMotionListener, MouseL
 	}
 
 	private void apply(int x, int y) {
-		if (getValueAt(x, y) != -2 && (Math.abs(x - startHighlightX) < 100) && (Math.abs(y - startHighlightY) < 100)
+		if (getValueAt(x, y) != -2 && (Math.abs(x - startHighlightX) < 200) && (Math.abs(y - startHighlightY) < 200)
 				&& !highlightedPixels.contains(new Point(x, y))) {
 			Color color = new Color(getValueAt(x, y));
 			int newRed = color.getRed();
 			int newBlue = color.getBlue();
 			int newGreen = color.getGreen();
-			System.out.println(Math.sqrt(Math.pow(newRed - currentRed, 2) + Math.pow(newGreen - currentGreen, 2)
-					+ Math.pow(newBlue - currentBlue, 2)));
+			//System.out.println(Math.sqrt(Math.pow(newRed - currentRed, 2) + Math.pow(newGreen - currentGreen, 2) + Math.pow(newBlue - currentBlue, 2)));
 			if (Math.sqrt(Math.pow(newRed - currentRed, 2) + Math.pow(newGreen - currentGreen, 2)
-					+ Math.pow(newBlue - currentBlue, 2)) < 20) {
-				counter++;
+					+ Math.pow(newBlue - currentBlue, 2)) < 50) {
+				//counter++;
 				highlightedPixels.add(new Point(x, y));
 				topCopyFromLabelBackground.setRGB(x, y, highlightColor);
 				imageToHighlightTopLabel.setVisible(false);
